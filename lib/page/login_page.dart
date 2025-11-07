@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../firebase/analytics.dart';
-import '../firebase/auth.dart'; // Make sure this import path is correct
+import '../firebase/auth.dart'; // Ensure this path is correct
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,14 +12,17 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Service instance
+  // Firebase auth service
   final AuthService _authService = AuthService();
 
-  // Text field controllers
+  // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // State variables
+  // Form key for validation
+  final _formKey = GlobalKey<FormState>();
+
+  // State
   String? _errorMessage;
   bool _isLoading = false;
 
@@ -33,6 +36,12 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _signIn() async {
     if (_isLoading) return;
 
+    // Validate input
+    if (!_formKey.currentState!.validate()) {
+      analytics.logEvent(name: 'login_validation_failed');
+      return;
+    }
+
     analytics.logEvent(name: 'login_button_pressed');
 
     setState(() {
@@ -45,14 +54,12 @@ class _LoginPageState extends State<LoginPage> {
       password: _passwordController.text.trim(),
     );
 
-    // After the async call, check if the widget is still mounted
     if (!mounted) return;
 
     if (errorMessage == null) {
       analytics.logEvent(name: 'login_passed');
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
-      // --- FAILURE: Show the error message ---
       setState(() {
         _errorMessage = errorMessage;
         _isLoading = false;
@@ -122,53 +129,73 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildFormFields() {
-    return Column(
-      children: [
-        TextField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Email',
-            labelStyle: TextStyle(color: Colors.grey[400]),
-            hintText: 'your@email.com',
-            hintStyle: TextStyle(color: Colors.grey[700]),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade800),
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Email',
+              labelStyle: TextStyle(color: Colors.grey[400]),
+              hintText: 'your@email.com',
+              hintStyle: TextStyle(color: Colors.grey[700]),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey.shade800),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blue),
+              ),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.blue),
-            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your email.';
+              }
+              final emailRegex = RegExp(r'^.+@.+$');
+              if (!emailRegex.hasMatch(value.trim())) {
+                return 'Enter a valid email address.';
+              }
+              return null;
+            },
           ),
-        ),
-        const SizedBox(height: 16.0),
-        TextField(
-          controller: _passwordController,
-          obscureText: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Password',
-            labelStyle: TextStyle(color: Colors.grey[400]),
-            hintText: '••••••••',
-            hintStyle: TextStyle(color: Colors.grey[700]),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade800),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Password',
+              labelStyle: TextStyle(color: Colors.grey[400]),
+              hintText: '••••••••',
+              hintStyle: TextStyle(color: Colors.grey[700]),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey.shade800),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blue),
+              ),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.blue),
-            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your password.';
+              }
+              if (value.length < 6) {
+                return 'Password must be at least 6 characters.';
+              }
+              return null;
+            },
           ),
-        ),
-        const SizedBox(height: 16.0),
-        _buildErrorMessage(),
-      ],
+          const SizedBox(height: 16.0),
+          _buildErrorMessage(),
+        ],
+      ),
     );
   }
 
   Widget _buildErrorMessage() {
-    if (_errorMessage == null) {
-      return const SizedBox.shrink();
-    }
+    if (_errorMessage == null) return const SizedBox.shrink();
     return Text(
       _errorMessage!,
       style: const TextStyle(color: Colors.red, fontSize: 14),
@@ -212,7 +239,6 @@ class _LoginPageState extends State<LoginPage> {
         ),
         GestureDetector(
           onTap: () {
-            // Using pushNamed will add the signup page on top of the stack
             Navigator.of(context).pushNamed('/signup');
           },
           child: const Text(

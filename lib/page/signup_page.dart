@@ -1,8 +1,8 @@
 // lib/page/signup_page.dart
 
 import 'package:flutter/material.dart';
-import '../firebase/auth.dart'; // Make sure this import path is correct
-import '../firebase/analytics.dart'; // Make sure this import path is correct
+import '../firebase/auth.dart'; // Ensure this path is correct
+import '../firebase/analytics.dart'; // Ensure this path is correct
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -12,15 +12,19 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  // Service instance
+  // Firebase service
   final AuthService _authService = AuthService();
 
-  // Text field controllers
+  // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _repeatPasswordController = TextEditingController();
+  final TextEditingController _repeatPasswordController =
+      TextEditingController();
 
-  // State variables
+  // Form key
+  final _formKey = GlobalKey<FormState>();
+
+  // State
   String? _errorMessage;
   bool _isLoading = false;
 
@@ -35,20 +39,18 @@ class _SignUpPageState extends State<SignUpPage> {
   Future<void> _signUp() async {
     if (_isLoading) return;
 
-    // Client-side validation: Check if passwords match
-    if (_passwordController.text != _repeatPasswordController.text) {
-      setState(() {
-        _errorMessage = "Passwords do not match.";
-      });
+    // Validate fields
+    if (!_formKey.currentState!.validate()) {
+      analytics.logEvent(name: 'signup_validation_failed');
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null; // Clear previous errors
+      _errorMessage = null;
     });
 
-    // Call the sign-up method from the service
+    // Call Firebase signup
     final errorMessage = await _authService.signUpWithEmailAndPassword(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
@@ -57,10 +59,9 @@ class _SignUpPageState extends State<SignUpPage> {
     if (!mounted) return;
 
     if (errorMessage == null) {
-      analytics.logEvent(name: 'login_passed');
+      analytics.logEvent(name: 'signup_passed');
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
-      // --- FAILURE: Show the error message ---
       setState(() {
         _errorMessage = errorMessage;
         _isLoading = false;
@@ -78,7 +79,8 @@ class _SignUpPageState extends State<SignUpPage> {
             maxHeight: 750,
             maxWidth: 350,
           ),
-          child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: ListView(
               children: [
                 const SizedBox(height: 80.0),
@@ -117,7 +119,7 @@ class _SignUpPageState extends State<SignUpPage> {
         ),
         const SizedBox(height: 8.0),
         Text(
-          'Your personal digital diary',
+          'Create your digital diary account',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.grey[400],
@@ -129,71 +131,100 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Widget _buildFormFields() {
-    return Column(
-      children: [
-        TextField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Email',
-            labelStyle: TextStyle(color: Colors.grey[400]),
-            hintText: 'your@email.com',
-            hintStyle: TextStyle(color: Colors.grey[700]),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade800),
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Email',
+              labelStyle: TextStyle(color: Colors.grey[400]),
+              hintText: 'your@email.com',
+              hintStyle: TextStyle(color: Colors.grey[700]),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey.shade800),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blue),
+              ),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.blue),
-            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your email.';
+              }
+              final emailRegex = RegExp(r'^.+@.+$');
+              if (!emailRegex.hasMatch(value.trim())) {
+                return 'Enter a valid email address.';
+              }
+              return null;
+            },
           ),
-        ),
-        const SizedBox(height: 16.0),
-        TextField(
-          controller: _passwordController,
-          obscureText: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Password',
-            labelStyle: TextStyle(color: Colors.grey[400]),
-            hintText: '••••••••',
-            hintStyle: TextStyle(color: Colors.grey[700]),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade800),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Password',
+              labelStyle: TextStyle(color: Colors.grey[400]),
+              hintText: '••••••••',
+              hintStyle: TextStyle(color: Colors.grey[700]),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey.shade800),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blue),
+              ),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.blue),
-            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your password.';
+              }
+              if (value.length < 6) {
+                return 'Password must be at least 6 characters.';
+              }
+              return null;
+            },
           ),
-        ),
-        const SizedBox(height: 16.0),
-        TextField(
-          controller: _repeatPasswordController,
-          obscureText: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Repeat password',
-            labelStyle: TextStyle(color: Colors.grey[400]),
-            hintText: '••••••••',
-            hintStyle: TextStyle(color: Colors.grey[700]),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade800),
+          const SizedBox(height: 16.0),
+          TextFormField(
+            controller: _repeatPasswordController,
+            obscureText: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Repeat password',
+              labelStyle: TextStyle(color: Colors.grey[400]),
+              hintText: '••••••••',
+              hintStyle: TextStyle(color: Colors.grey[700]),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey.shade800),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blue),
+              ),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.blue),
-            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please repeat your password.';
+              }
+              if (value != _passwordController.text) {
+                return 'Passwords do not match.';
+              }
+              return null;
+            },
           ),
-        ),
-        const SizedBox(height: 16.0),
-        _buildErrorMessage(),
-      ],
+          const SizedBox(height: 16.0),
+          _buildErrorMessage(),
+        ],
+      ),
     );
   }
 
   Widget _buildErrorMessage() {
-    if (_errorMessage == null) {
-      return const SizedBox.shrink();
-    }
+    if (_errorMessage == null) return const SizedBox.shrink();
     return Text(
       _errorMessage!,
       style: const TextStyle(color: Colors.red, fontSize: 14),
@@ -237,7 +268,6 @@ class _SignUpPageState extends State<SignUpPage> {
         ),
         GestureDetector(
           onTap: () {
-            // Replaces the signup page with the login page
             Navigator.of(context).pushReplacementNamed('/');
           },
           child: const Text(

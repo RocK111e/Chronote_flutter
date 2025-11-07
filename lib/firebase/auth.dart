@@ -8,13 +8,6 @@ class AuthService {
     required String password,
   }) 
   async {
-    //validation
-    if (email.isEmpty || password.isEmpty) {
-      return 'Email and password cannot be empty.';
-    }
-    if (!RegExp(r'^.+@.+$').hasMatch(email)) {
-      return 'Please enter a valid email address.';
-    }
 
     try {
       await _firebaseAuth.signInWithEmailAndPassword(
@@ -31,13 +24,6 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    //validation
-    if (email.isEmpty || password.isEmpty) {
-      return 'Email and password cannot be empty.';
-    }
-    if (!RegExp(r'^.+@.+$').hasMatch(email)) {
-      return 'Please enter a valid email address.';
-    }
     try {
       await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
