@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import '../firebase/auth.dart'; 
+
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,6 +14,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _remindersEnabled = true;
   String _selectedFrequency = 'Daily';
   String _selectedLanguage = 'English';
+  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +164,8 @@ class _SettingsPageState extends State<SettingsPage> {
         icon: const Icon(Icons.logout, color: Colors.red),
         label: const Text('Log Out', style: TextStyle(color: Colors.red)),
         onPressed: () {
-          /* TODO: Implement log out logic */
+          _authService.signOut();
+          Navigator.of(context).pushReplacementNamed('/');
         },
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 12),

@@ -1,9 +1,71 @@
 // lib/page/signup_page.dart
 
 import 'package:flutter/material.dart';
+import '../firebase/auth.dart'; // Make sure this import path is correct
 
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
+
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  // Service instance
+  final AuthService _authService = AuthService();
+
+  // Text field controllers
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _repeatPasswordController = TextEditingController();
+
+  // State variables
+  String? _errorMessage;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _repeatPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signUp() async {
+    if (_isLoading) return;
+
+    // Client-side validation: Check if passwords match
+    if (_passwordController.text != _repeatPasswordController.text) {
+      setState(() {
+        _errorMessage = "Passwords do not match.";
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null; // Clear previous errors
+    });
+
+    // Call the sign-up method from the service
+    final errorMessage = await _authService.signUpWithEmailAndPassword(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (errorMessage == null) {
+      // --- SUCCESS: Navigate to the home page ---
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      // --- FAILURE: Show the error message ---
+      setState(() {
+        _errorMessage = errorMessage;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +85,9 @@ class SignUpPage extends StatelessWidget {
                 const SizedBox(height: 48.0),
                 _buildFormFields(),
                 const SizedBox(height: 24.0),
-                _buildSignUpButton(context),
+                _buildSignUpButton(),
                 const SizedBox(height: 24.0),
-                _buildLoginLink(context),
+                _buildLoginLink(),
               ],
             ),
           ),
@@ -69,6 +131,7 @@ class SignUpPage extends StatelessWidget {
     return Column(
       children: [
         TextField(
+          controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
@@ -86,6 +149,7 @@ class SignUpPage extends StatelessWidget {
         ),
         const SizedBox(height: 16.0),
         TextField(
+          controller: _passwordController,
           obscureText: true,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
@@ -103,6 +167,7 @@ class SignUpPage extends StatelessWidget {
         ),
         const SizedBox(height: 16.0),
         TextField(
+          controller: _repeatPasswordController,
           obscureText: true,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
@@ -118,15 +183,26 @@ class SignUpPage extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16.0),
+        _buildErrorMessage(),
       ],
     );
   }
 
-  Widget _buildSignUpButton(BuildContext context) {
+  Widget _buildErrorMessage() {
+    if (_errorMessage == null) {
+      return const SizedBox.shrink();
+    }
+    return Text(
+      _errorMessage!,
+      style: const TextStyle(color: Colors.red, fontSize: 14),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  Widget _buildSignUpButton() {
     return ElevatedButton(
-      onPressed: () {
-        Navigator.pushReplacementNamed(context, '/home');
-      },
+      onPressed: _isLoading ? null : _signUp,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blue,
         padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -134,14 +210,23 @@ class SignUpPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(8.0),
         ),
       ),
-      child: const Text(
-        'Sign Up',
-        style: TextStyle(color: Colors.white, fontSize: 16.0),
-      ),
+      child: _isLoading
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.0,
+              ),
+            )
+          : const Text(
+              'Sign Up',
+              style: TextStyle(color: Colors.white, fontSize: 16.0),
+            ),
     );
   }
 
-  Widget _buildLoginLink(BuildContext context) {
+  Widget _buildLoginLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -151,7 +236,8 @@ class SignUpPage extends StatelessWidget {
         ),
         GestureDetector(
           onTap: () {
-            Navigator.pushReplacementNamed(context, '/');
+            // Replaces the signup page with the login page
+            Navigator.of(context).pushReplacementNamed('/');
           },
           child: const Text(
             'Login',
