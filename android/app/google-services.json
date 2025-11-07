@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1007609971869",
+    "project_id": "chronote-e7fa5",
+    "storage_bucket": "chronote-e7fa5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007609971869:android:5fe91e250a53526b664074",
+        "android_client_info": {
+          "package_name": "com.example.event_diary"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRvcdAsclyRd-F4KyGbYga2PRB0VaLaL0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007609971869:android:cd55c684776b94b1664074",
+        "android_client_info": {
+          "package_name": "com.example.event_diary2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRvcdAsclyRd-F4KyGbYga2PRB0VaLaL0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

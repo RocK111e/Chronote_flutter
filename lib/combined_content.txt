@@ -1,0 +1,1511 @@
+--- FILE: main.dart ---
+// lib/main.dart
+
+import 'package:event_diary/page/main_screen.dart';
+import 'package:flutter/material.dart';
+import 'page/login_page.dart';
+import 'page/signup_page.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Login App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const LoginPage(),
+        '/home': (context) => const MainScreen(),
+        '/signup': (context) => const SignUpPage(),
+      },
+    );
+  }
+}
+
+--- FILE: page/login_page.dart ---
+// lib/page/login_page.dart
+
+import 'package:flutter/material.dart';
+
+class LoginPage extends StatelessWidget {
+  const LoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: 750,
+            maxWidth: 350,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: ListView(
+              children: [
+                const SizedBox(height: 80.0),
+                _buildHeader(),
+                const SizedBox(height: 48.0),
+                _buildFormFields(),
+                const SizedBox(height: 24.0),
+                _buildLoginButton(context),
+                const SizedBox(height: 24.0),
+                _buildSignUpLink(context),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        const Icon(
+          Icons.book_outlined,
+          size: 80.0,
+          color: Colors.blue,
+        ),
+        const SizedBox(height: 16.0),
+        const Text(
+          'Chronote',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 32.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8.0),
+        Text(
+          'Your personal digital diary',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 16.0,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormFields() {
+    return Column(
+      children: [
+        TextField(
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Email',
+            labelStyle: TextStyle(color: Colors.grey[400]),
+            hintText: 'your@email.com',
+            hintStyle: TextStyle(color: Colors.grey[700]),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade800),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.blue),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16.0),
+        TextField(
+          obscureText: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Password',
+            labelStyle: TextStyle(color: Colors.grey[400]),
+            hintText: '••••••••',
+            hintStyle: TextStyle(color: Colors.grey[700]),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade800),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.blue),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        Navigator.pushReplacementNamed(context, '/home');
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+      ),
+      child: const Text(
+        'Login',
+        style: TextStyle(color: Colors.white, fontSize: 16.0),
+      ),
+    );
+  }
+
+  Widget _buildSignUpLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Don't have an account? ",
+          style: TextStyle(color: Colors.grey[400]),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushReplacementNamed(context, '/signup');
+          },
+          child: const Text(
+            'Sign Up',
+            style: TextStyle(
+              color: Colors.blue,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+--- FILE: page/home_page.dart ---
+// lib/page/home_page.dart
+
+import 'package:flutter/material.dart';
+import '../models/memory.dart';
+import '../widgets/tile.dart';
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  final List<Memory> memories = const [
+  Memory(
+    date: 'Tuesday, October 8, 2025 at 03:00 AM',
+    content: 'Today was an incredible day! I went hiking...',
+    tags: ['hiking', 'nature', 'adventure'],
+    emoji: '⛰️',
+  ),
+  Memory(
+    date: 'Monday, October 7, 2025 at 03:00 AM',
+    content: 'Started reading a new book today...',
+    imagePath: 'lib/mock/image.png',
+    tags: ['books', 'coffee', 'relaxation'],
+    emoji: '📚',
+  ),
+  Memory(
+    date: 'Sunday, October 6, 2025 at 10:00 PM',
+    content: 'Just a simple note for today.',
+  ),
+];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: memories.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _buildHomeHeader(memories.length);
+        }
+        final memory = memories[index - 1];
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+          child: MemoryTile(memory: memory),
+        );
+      },
+    );
+  }
+
+  Widget _buildHomeHeader(int entryCount) {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'My Memories',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 32.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              '$entryCount entries',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+--- FILE: page/signup_page.dart ---
+// lib/page/signup_page.dart
+
+import 'package:flutter/material.dart';
+
+class SignUpPage extends StatelessWidget {
+  const SignUpPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: 750,
+            maxWidth: 350,
+          ),
+          child: Center(
+            child: ListView(
+              children: [
+                const SizedBox(height: 80.0),
+                _buildHeader(),
+                const SizedBox(height: 48.0),
+                _buildFormFields(),
+                const SizedBox(height: 24.0),
+                _buildSignUpButton(context),
+                const SizedBox(height: 24.0),
+                _buildLoginLink(context),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        const Icon(
+          Icons.book_outlined,
+          size: 80.0,
+          color: Colors.blue,
+        ),
+        const SizedBox(height: 16.0),
+        const Text(
+          'Chronote',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 32.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8.0),
+        Text(
+          'Your personal digital diary',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 16.0,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormFields() {
+    return Column(
+      children: [
+        TextField(
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Email',
+            labelStyle: TextStyle(color: Colors.grey[400]),
+            hintText: 'your@email.com',
+            hintStyle: TextStyle(color: Colors.grey[700]),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade800),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.blue),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16.0),
+        TextField(
+          obscureText: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Password',
+            labelStyle: TextStyle(color: Colors.grey[400]),
+            hintText: '••••••••',
+            hintStyle: TextStyle(color: Colors.grey[700]),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade800),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.blue),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16.0),
+        TextField(
+          obscureText: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Repeat password',
+            labelStyle: TextStyle(color: Colors.grey[400]),
+            hintText: '••••••••',
+            hintStyle: TextStyle(color: Colors.grey[700]),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade800),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.blue),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSignUpButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        Navigator.pushReplacementNamed(context, '/home');
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+      ),
+      child: const Text(
+        'Sign Up',
+        style: TextStyle(color: Colors.white, fontSize: 16.0),
+      ),
+    );
+  }
+
+  Widget _buildLoginLink(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Already have an account? ",
+          style: TextStyle(color: Colors.grey[400]),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushReplacementNamed(context, '/');
+          },
+          child: const Text(
+            'Login',
+            style: TextStyle(
+              color: Colors.blue,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+--- FILE: page/calendar_page.dart ---
+// lib/page/calendar_page.dart
+
+import 'package:flutter/material.dart';
+import '../models/memory.dart';
+import '../widgets/tile.dart';
+
+class CalendarPage extends StatelessWidget {
+  const CalendarPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const sampleMemory = Memory(
+      date: 'October 5, 2025 at 03:00 AM',
+      content: 'Family dinner tonight was wonderful. Mom made her famous lasagna and we spent hours just talking and laughing together. These moments are so precious....',
+      tags: ['family', 'food', 'gratitude'],
+    );
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      children: [
+        _buildHeader(),
+        const SizedBox(height: 24),
+        _buildCalendarView(),
+        const SizedBox(height: 32),
+        _buildEntriesForDateHeader(),
+        const SizedBox(height: 16),
+        MemoryTile(
+          memory: sampleMemory,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Calendar',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 32.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              'View your memories by date',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarView() {
+    return Card(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _buildCalendarHeader(),
+            const SizedBox(height: 24),
+            _buildWeekdays(),
+            const SizedBox(height: 16),
+            _buildDaysGrid(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left, color: Colors.white),
+          onPressed: () {},
+        ),
+        const Text(
+          'October 2025',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chevron_right, color: Colors.white),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeekdays() {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: days.map((day) => Text(day, style: TextStyle(color: Colors.grey[600]))).toList(),
+    );
+  }
+
+  Widget _buildDaysGrid() {
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+      ),
+      itemCount: 31, 
+      itemBuilder: (context, index) {
+        final day = index + 1;
+        if (day == 5) return _buildDayCell(day.toString(), isSelected: true);
+        if (day == 3 || day == 7 || day == 8) return _buildDayCell(day.toString(), hasEntry: true);
+        return _buildDayCell(day.toString());
+      },
+    );
+  }
+
+  Widget _buildDayCell(String day, {bool isSelected = false, bool hasEntry = false}) {
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.blue : (hasEntry ? Colors.grey[800] : Colors.transparent),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              day,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[300],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            if (hasEntry) ...[
+              const SizedBox(height: 2),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEntriesForDateHeader() {
+    return const Text(
+      'Entries for October 5, 2025',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+}
+
+--- FILE: page/search_page.dart ---
+// lib/page/search_page.dart
+
+import 'package:flutter/material.dart';
+import '../models/memory.dart';
+import '../widgets/tile.dart';
+
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
+
+  @override
+  State<SearchPage> createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage> {
+  bool _showFilters = true;
+
+  void _toggleFilters() {
+    setState(() {
+      _showFilters = !_showFilters;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Updated sample data to include an emoji
+    const sampleResult = Memory(
+      date: 'October 7, 2025 at 03:00 AM',
+      content: 'Started reading a new book today called "The Midnight Library". Already 100 pages in and I can\'t put it down. The concept of parallel lives is fascina...',
+      tags: ['books', 'coffee', 'relaxation'],
+      emoji: '📚', // Added emoji for the result tile
+    );
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      children: [
+        _buildHeader(),
+        const SizedBox(height: 24),
+        _buildSearchCard(),
+        const SizedBox(height: 32),
+        _buildResultsHeader(),
+        const SizedBox(height: 16),
+        MemoryTile(memory: sampleResult),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Search',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 32.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              'Find your memories',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchCard() {
+    return Card(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSearchTextField(),
+            const SizedBox(height: 16),
+            _buildFilterToggleButton(),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return SizeTransition(sizeFactor: animation, child: child);
+              },
+              child: _showFilters ? _buildFilterSection() : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchTextField() {
+    return TextField(
+      style: const TextStyle(color: Colors.white),
+      decoration: _inputDecoration('Search by text...', prefixIcon: Icons.search),
+    );
+  }
+
+  Widget _buildFilterToggleButton() {
+    return TextButton.icon(
+      onPressed: _toggleFilters,
+      icon: Icon(Icons.filter_list, color: Colors.grey[400], size: 20),
+      label: Text(
+        _showFilters ? 'Hide Filters' : 'Show Filters',
+        style: TextStyle(color: Colors.grey[400]),
+      ),
+      style: TextButton.styleFrom(
+        minimumSize: const Size(double.infinity, 48),
+        backgroundColor: Colors.grey.withValues(alpha: 0.1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text('Filter by Tags', style: TextStyle(color: Colors.grey[400])),
+        const SizedBox(height: 8),
+        TextField(
+          style: const TextStyle(color: Colors.white),
+          decoration: _inputDecoration('Enter tags separated by commas...'),
+        ),
+        
+        const SizedBox(height: 16),
+        Text('Filter by Emoji', style: TextStyle(color: Colors.grey[400])),
+        const SizedBox(height: 8),
+        TextField(
+          style: const TextStyle(color: Colors.white),
+          decoration: _inputDecoration('Enter an emoji...', prefixIcon: Icons.emoji_emotions_outlined),
+        ),
+        
+
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Start Date', style: TextStyle(color: Colors.grey[400])),
+                  const SizedBox(height: 8),
+                  TextField(
+                    readOnly: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDecoration('10.09.2025', suffixIcon: Icons.calendar_today_outlined),
+                    onTap: () { /* TODO: Show date picker */ },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('End Date', style: TextStyle(color: Colors.grey[400])),
+                  const SizedBox(height: 8),
+                  TextField(
+                    readOnly: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDecoration('10.12.2025', suffixIcon: Icons.calendar_today_outlined),
+                    onTap: () { /* TODO: Show date picker */ },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        TextButton(
+          onPressed: () {},
+          style: TextButton.styleFrom(
+            minimumSize: const Size(double.infinity, 48),
+            side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+          ),
+          child: Text('Clear All Filters', style: TextStyle(color: Colors.grey[400])),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultsHeader() {
+    return const Text(
+      '1 result',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hintText, {IconData? prefixIcon, IconData? suffixIcon}) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(color: Colors.grey[600]),
+      filled: true,
+      fillColor: Colors.grey.withValues(alpha: 0.1),
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: Colors.grey[400], size: 20) : null,
+      suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: Colors.grey[400], size: 20) : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+}
+
+--- FILE: page/settings_page.dart ---
+// lib/page/settings_page.dart
+
+import 'package:flutter/material.dart';
+
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool _remindersEnabled = true;
+  String _selectedFrequency = 'Daily';
+  String _selectedLanguage = 'English';
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      children: [
+        _buildHeader(),
+        const SizedBox(height: 24),
+        _buildProfileCard(),
+        const SizedBox(height: 16),
+        _buildLanguageCard(),
+        const SizedBox(height: 16),
+        _buildRemindersCard(),
+        const SizedBox(height: 16),
+        _buildAccountCard(),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Settings',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 32.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              'Manage your account and preferences',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 16.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileCard() {
+    return _buildCard(
+      icon: Icons.person_outline,
+      title: 'Profile',
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const CircleAvatar(
+          radius: 24,
+          backgroundColor: Colors.blue,
+          child: Text('JD',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+        title: const Text('John Doe',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: Text('john.doe@example.com',
+            style: TextStyle(color: Colors.grey[400])),
+      ),
+    );
+  }
+
+  Widget _buildLanguageCard() {
+    return _buildCard(
+      icon: Icons.language,
+      title: 'Language',
+      child: _buildDropdown(
+        value: _selectedLanguage,
+        items: ['English', 'Ukrainian', 'Spanish'],
+        onChanged: (value) {
+          setState(() {
+            _selectedLanguage = value!;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildRemindersCard() {
+    return _buildCard(
+      icon: Icons.notifications_none,
+      title: 'Reminders',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            title: const Text('Enable notifications',
+                style: TextStyle(color: Colors.white)),
+            subtitle: Text('Get reminded to write your daily entries',
+                style: TextStyle(color: Colors.grey[400])),
+            value: _remindersEnabled,
+            onChanged: (value) {
+              setState(() {
+                _remindersEnabled = value;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            activeTrackColor: Colors.blue.withOpacity(0.5),
+            activeColor: Colors.blue,
+          ),
+          const SizedBox(height: 16),
+          Text('Frequency', style: TextStyle(color: Colors.grey[400])),
+          const SizedBox(height: 8),
+          _buildDropdown(
+            value: _selectedFrequency,
+            items: ['Daily', 'Weekly', 'Monthly'],
+            onChanged: (value) {
+              setState(() {
+                _selectedFrequency = value!;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          Text('Time', style: TextStyle(color: Colors.grey[400])),
+          const SizedBox(height: 8),
+          TextField(
+            readOnly: true,
+            controller: TextEditingController(text: '08:00 PM'),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration(suffixIcon: Icons.access_time),
+            onTap: () {
+              /* TODO: Show time picker */
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountCard() {
+    return _buildCard(
+      icon: Icons.logout,
+      title: 'Account',
+      child: TextButton.icon(
+        icon: const Icon(Icons.logout, color: Colors.red),
+        label: const Text('Log Out', style: TextStyle(color: Colors.red)),
+        onPressed: () {
+          /* TODO: Implement log out logic */
+        },
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          side: const BorderSide(color: Colors.red),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(
+      {required IconData icon, required String title, required Widget child}) {
+    return Card(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.grey[400]),
+                const SizedBox(width: 12),
+                Text(title,
+                    style: TextStyle(color: Colors.grey[400], fontSize: 16)),
+              ],
+            ),
+            const Divider(height: 32),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(
+      {required String value,
+      required List<String> items,
+      required ValueChanged<String?> onChanged}) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items.map((String itemValue) {
+        return DropdownMenuItem<String>(
+          value: itemValue,
+          child: Text(itemValue),
+        );
+      }).toList(),
+      onChanged: onChanged,
+      style: const TextStyle(color: Colors.white),
+      decoration: _inputDecoration(),
+      dropdownColor: const Color(0xFF2C2C2E),
+    );
+  }
+
+  InputDecoration _inputDecoration({IconData? suffixIcon}) {
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.grey.withOpacity(0.1),
+      suffixIcon: suffixIcon != null
+          ? Icon(suffixIcon, color: Colors.grey[400], size: 20)
+          : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+}
+
+--- FILE: page/main_screen.dart ---
+// lib/page/main_screen.dart
+
+import 'package:flutter/material.dart';
+import 'home_page.dart';
+import 'calendar_page.dart';
+import 'search_page.dart';
+import 'settings_page.dart';
+import '../widgets/navbar.dart';
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _pages = <Widget>[
+    HomePage(),
+    CalendarPage(),
+    SearchPage(),
+    SettingsPage(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: _pages.elementAt(_selectedIndex),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton(
+              onPressed: () {},
+              backgroundColor: Colors.blue,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+      bottomNavigationBar: NavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+
+}
+
+--- FILE: page/memory_detail_page.dart ---
+// lib/page/memory_detail_page.dart
+
+import 'package:flutter/material.dart';
+import '../models/memory.dart';
+
+class MemoryDetailPage extends StatelessWidget {
+  final Memory memory;
+
+  const MemoryDetailPage({super.key, required this.memory});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Row(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: const Row(
+                children: [
+                  Icon(Icons.arrow_back, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Back to Home', style: TextStyle(color: Colors.white, fontSize: 18)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+            onPressed: () { /* TODO: Implement edit functionality */ },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: () { /* TODO: Implement delete functionality */ },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          color: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Make card wrap content
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
+                    const SizedBox(width: 8.0),
+                    Text(
+                      memory.date, // Use data from the memory object
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                if (memory.imagePath != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: Image.asset(
+                          memory.imagePath!,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: 200,
+                        ),
+                      ),
+                    ),
+
+                Text(
+                  memory.content,
+                  style: const TextStyle(color: Colors.white, fontSize: 16.0, height: 1.5),
+                ),
+                if (memory.tags.isNotEmpty) ...[
+                  const SizedBox(height: 24.0),
+                  Wrap(
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    children: memory.tags.map((label) => _buildTag(label)).toList(),
+                  ),
+                ]
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20.0),
+        border: Border.all(color: Colors.blue),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.blue, fontSize: 12.0),
+      ),
+    );
+  }
+}
+
+
+--- FILE: widgets/tile.dart ---
+// lib/widgets/tile.dart
+
+import 'package:flutter/material.dart';
+import '../models/memory.dart';
+import '../page/memory_detail_page.dart';
+
+class MemoryTile extends StatelessWidget {
+  final Memory memory;
+
+  const MemoryTile({
+    super.key,
+    required this.memory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MemoryDetailPage(memory: memory),
+          ),
+        );
+      },
+      splashColor: Colors.blue.withValues(alpha: 0.2),
+      highlightColor: Colors.blue.withValues(alpha: 0.1),
+      child: Card(
+        color: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 12.0),
+              child: Row(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
+                      const SizedBox(width: 8.0),
+                      Text(
+                        memory.date,
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
+                    ],
+                  ),
+                  
+                  const Spacer(),
+                  
+                  if (memory.emoji != null && memory.emoji!.isNotEmpty)
+                    Text(
+                      memory.emoji!,
+                      style: const TextStyle(fontSize: 22.0, fontFamily: 'Noto Emoji'),
+                    ),
+                ],
+              ),
+            ),
+            
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (memory.imagePath != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: Image.asset(
+                          memory.imagePath!,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: 200,
+                        ),
+                      ),
+                    ),
+                  Text(
+                    memory.content,
+                    style: TextStyle(color: Colors.grey[300], fontSize: 15.0, height: 1.4),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (memory.tags.isNotEmpty) ...[
+                    const SizedBox(height: 16.0),
+                    Row(
+                      children: memory.tags.map((label) => _buildTag(label)).toList(),
+                    )
+                  ]
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag(String label) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20.0),
+        border: Border.all(color: Colors.blue),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.blue, fontSize: 12.0),
+      ),
+    );
+  }
+}
+
+--- FILE: widgets/navbar.dart ---
+import 'package:flutter/material.dart';
+
+class NavBar extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const NavBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: const Color(0xFF1E1E1E),
+      currentIndex: currentIndex,
+      onTap: onTap, 
+      selectedItemColor: Colors.blue,
+      unselectedItemColor: Colors.grey[600],
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_today),
+          label: 'Calendar',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.search),
+          label: 'Search',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.settings),
+          label: 'Settings',
+        ),
+      ],
+    );
+  }
+}
+
+--- FILE: models/memory.dart ---
+// lib/models/memory.dart
+
+class Memory {
+  final String date;
+  final String content;
+  final List<String> tags;
+  final String? emoji;
+  final String? imagePath;
+
+  const Memory({
+    required this.date,
+    required this.content,
+    this.tags = const [],
+    this.emoji,
+    this.imagePath,
+  });
+}
+
+--- FILE: firebase_options.dart ---
+// File generated by FlutterFire CLI.
+// ignore_for_file: type=lint
+import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+
+/// Default [FirebaseOptions] for use with your Firebase apps.
+///
+/// Example:
+/// ```dart
+/// import 'firebase_options.dart';
+/// // ...
+/// await Firebase.initializeApp(
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// ```
+class DefaultFirebaseOptions {
+  static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return web;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for ios - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      case TargetPlatform.macOS:
+        return macos;
+      case TargetPlatform.windows:
+        return windows;
+      case TargetPlatform.linux:
+        //return web;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for linux - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not supported for this platform.',
+        );
+    }
+  }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCoKfRCvKWpVsAXc6Yzd3JveooXrp_hrDA',
+    appId: '1:1007609971869:web:644ff8498b36a311664074',
+    messagingSenderId: '1007609971869',
+    projectId: 'chronote-e7fa5',
+    authDomain: 'chronote-e7fa5.firebaseapp.com',
+    storageBucket: 'chronote-e7fa5.firebasestorage.app',
+    measurementId: 'G-65LMGNES2C',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyBRvcdAsclyRd-F4KyGbYga2PRB0VaLaL0',
+    appId: '1:1007609971869:android:5fe91e250a53526b664074',
+    messagingSenderId: '1007609971869',
+    projectId: 'chronote-e7fa5',
+    storageBucket: 'chronote-e7fa5.firebasestorage.app',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCEAQztostvg0rBvKO0oKUMI7B8GcJu22Y',
+    appId: '1:1007609971869:ios:edd4505d3a78603d664074',
+    messagingSenderId: '1007609971869',
+    projectId: 'chronote-e7fa5',
+    storageBucket: 'chronote-e7fa5.firebasestorage.app',
+    iosBundleId: 'com.example.eventDiary',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyCoKfRCvKWpVsAXc6Yzd3JveooXrp_hrDA',
+    appId: '1:1007609971869:web:d155264c42ecc60b664074',
+    messagingSenderId: '1007609971869',
+    projectId: 'chronote-e7fa5',
+    authDomain: 'chronote-e7fa5.firebaseapp.com',
+    storageBucket: 'chronote-e7fa5.firebasestorage.app',
+    measurementId: 'G-YB1NT90KQ5',
+  );
+
+}
+
+--- FILE: combined_content.txt ---
+
+
