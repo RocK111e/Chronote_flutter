@@ -1,5 +1,7 @@
 // lib/main.dart
 
+import 'package:event_diary2/firebase/analytics.dart';
+
 import '/page/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'page/login_page.dart';
@@ -7,15 +9,12 @@ import 'page/signup_page.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'firebase_options.dart';
 import 'dart:ui';
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp();
 
   FlutterError.onError = (FlutterErrorDetails errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
@@ -25,6 +24,14 @@ Future<void> main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+
+  await analytics.setAnalyticsCollectionEnabled(true);
+
+  await analytics.logEvent(
+    name: 'test_event',
+    parameters: {'success': true},
+  );
+
 
   runApp(const MyApp());
 }

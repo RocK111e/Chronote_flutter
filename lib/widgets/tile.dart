@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../models/memory.dart';
 import '../page/memory_detail_page.dart';
+import '../firebase/analytics.dart';
 
 class MemoryTile extends StatelessWidget {
   final Memory memory;
@@ -16,6 +17,7 @@ class MemoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
+        analytics.logEvent(name: 'memory_tile_tapped');
         Navigator.push(
           context,
           MaterialPageRoute(

@@ -49,8 +49,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (errorMessage == null) {
-      // --- SUCCESS: Navigate to the home page ---
-      // We use pushReplacementNamed to prevent the user from going back to the login screen.
+      analytics.logEvent(name: 'login_passed');
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
       // --- FAILURE: Show the error message ---

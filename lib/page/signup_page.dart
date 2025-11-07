@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../firebase/auth.dart'; // Make sure this import path is correct
+import '../firebase/analytics.dart'; // Make sure this import path is correct
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -56,7 +57,7 @@ class _SignUpPageState extends State<SignUpPage> {
     if (!mounted) return;
 
     if (errorMessage == null) {
-      // --- SUCCESS: Navigate to the home page ---
+      analytics.logEvent(name: 'login_passed');
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
       // --- FAILURE: Show the error message ---
