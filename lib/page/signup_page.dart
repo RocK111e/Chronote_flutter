@@ -12,19 +12,15 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  // Firebase service
   final AuthService _authService = AuthService();
 
-  // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _repeatPasswordController =
       TextEditingController();
 
-  // Form key
   final _formKey = GlobalKey<FormState>();
 
-  // State
   String? _errorMessage;
   bool _isLoading = false;
 
@@ -39,7 +35,6 @@ class _SignUpPageState extends State<SignUpPage> {
   Future<void> _signUp() async {
     if (_isLoading) return;
 
-    // Validate fields
     if (!_formKey.currentState!.validate()) {
       analytics.logEvent(name: 'signup_validation_failed');
       return;
@@ -50,7 +45,6 @@ class _SignUpPageState extends State<SignUpPage> {
       _errorMessage = null;
     });
 
-    // Call Firebase signup
     final errorMessage = await _authService.signUpWithEmailAndPassword(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),

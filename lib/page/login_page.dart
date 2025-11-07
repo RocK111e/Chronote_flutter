@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../firebase/analytics.dart';
-import '../firebase/auth.dart'; // Ensure this path is correct
+import '../firebase/auth.dart'; 
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,17 +12,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Firebase auth service
   final AuthService _authService = AuthService();
 
-  // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Form key for validation
   final _formKey = GlobalKey<FormState>();
 
-  // State
   String? _errorMessage;
   bool _isLoading = false;
 
@@ -36,7 +32,6 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _signIn() async {
     if (_isLoading) return;
 
-    // Validate input
     if (!_formKey.currentState!.validate()) {
       analytics.logEvent(name: 'login_validation_failed');
       return;
