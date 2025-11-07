@@ -1,6 +1,7 @@
 // lib/page/login_page.dart
 
 import 'package:flutter/material.dart';
+import '../firebase/analytics.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -109,6 +110,7 @@ class LoginPage extends StatelessWidget {
   Widget _buildLoginButton(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
+        analytics.logEvent(name: 'login_button_pressed');
         Navigator.pushReplacementNamed(context, '/home');
       },
       style: ElevatedButton.styleFrom(

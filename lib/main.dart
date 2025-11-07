@@ -5,10 +5,14 @@ import 'package:flutter/material.dart';
 import 'page/login_page.dart';
 import 'page/signup_page.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'package:firebase_core/firebase_core.dart';
 
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
