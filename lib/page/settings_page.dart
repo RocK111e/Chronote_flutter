@@ -1,6 +1,5 @@
-// lib/page/settings_page.dart
-
 import 'package:flutter/material.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -28,6 +27,9 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildRemindersCard(),
         const SizedBox(height: 16),
         _buildAccountCard(),
+        const SizedBox(height: 16),
+        // --- ADDED THIS NEW DANGER ZONE CARD ---
+        _buildDangerZoneCard(),
         const SizedBox(height: 24),
       ],
     );
@@ -167,6 +169,31 @@ class _SettingsPageState extends State<SettingsPage> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         ),
+      ),
+    );
+  }
+
+  // --- NEW WIDGET FOR CRASHLYTICS TESTING ---
+  Widget _buildDangerZoneCard() {
+    return _buildCard(
+      icon: Icons.warning_amber_rounded,
+      title: '',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 16),
+          // Button 1: Native Crash (closes the app)
+          TextButton.icon(
+            label: const Text('Force Crash', style: TextStyle(color: Colors.red)),
+            onPressed: () => FirebaseCrashlytics.instance.crash(),
+            style: TextButton.styleFrom(
+              side: BorderSide(color: Colors.red.withOpacity(0.5)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }
