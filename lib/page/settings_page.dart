@@ -177,7 +177,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // --- NEW WIDGET FOR CRASHLYTICS TESTING ---
   Widget _buildDangerZoneCard() {
     return _buildCard(
       icon: Icons.warning_amber_rounded,
@@ -186,7 +185,6 @@ class _SettingsPageState extends State<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 16),
-          // Button 1: Native Crash (closes the app)
           TextButton.icon(
             label: const Text('Force Crash', style: TextStyle(color: Colors.red)),
             onPressed: () => FirebaseCrashlytics.instance.crash(),
