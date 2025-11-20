@@ -28,8 +28,7 @@ Future<void> main() async {
   await analytics.setAnalyticsCollectionEnabled(true);
 
   await analytics.logEvent(
-    name: 'test_event',
-    parameters: {'success': true},
+    name: 'test_event'
   );
 
 

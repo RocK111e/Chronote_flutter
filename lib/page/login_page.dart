@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
     if (_isLoading) return;
 
     if (!_formKey.currentState!.validate()) {
-      analytics.logEvent(name: 'login_validation_failed');
+      analytics.logEvent(name: 'login_validation_failed', parameters: {'email': _emailController.text.trim()});
       return;
     }
 
