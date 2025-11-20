@@ -1,10 +1,10 @@
 // lib/page/main_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Add this
-import '../data/memory_repository.dart'; // Add this
-import '../bloc/memory/memory_bloc.dart'; // Add this
-import '../bloc/memory/memory_event.dart'; // Add this
+import 'package:flutter_bloc/flutter_bloc.dart'; 
+import '../data/memory_repository.dart'; 
+import '../bloc/memory/memory_bloc.dart'; 
+import '../bloc/memory/memory_event.dart'; 
 import 'home_page.dart';
 import 'calendar_page.dart';
 import 'search_page.dart';
@@ -36,7 +36,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Wrap the Scaffold in BlocProvider to make MemoryBloc available to all pages
     return BlocProvider(
       create: (context) => MemoryBloc(MemoryRepository())..add(LoadMemories()),
       child: Scaffold(
@@ -45,7 +44,6 @@ class _MainScreenState extends State<MainScreen> {
         floatingActionButton: _selectedIndex == 0
             ? FloatingActionButton(
                 onPressed: () {
-                  // Logic to add new memory will go here later
                 },
                 backgroundColor: Colors.blue,
                 child: const Icon(Icons.add, color: Colors.white),

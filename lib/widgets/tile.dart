@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/memory.dart';
 import '../page/memory_detail_page.dart';
 import '../firebase/analytics.dart';
-import '../utils/date_helper.dart'; // Import Helper
+import '../utils/date_helper.dart';
 
 class MemoryTile extends StatelessWidget {
   final Memory memory;
@@ -16,7 +16,6 @@ class MemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format the date for display
     final displayDate = DateHelper.formatDisplayDate(memory.date);
 
     return InkWell(

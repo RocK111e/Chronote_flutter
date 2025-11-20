@@ -8,22 +8,17 @@ import 'page/signup_page.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart'; // Required for kIsWeb and defaultTargetPlatform
+import 'package:flutter/foundation.dart'; 
 
-// 1. Import the generated options file
 import 'firebase_options.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Pass the options to initializeApp
-  // This fixes the "FirebaseOptions cannot be null" error on Web and Linux
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 3. Wrap Crashlytics in a check. 
-  // Crashlytics is NOT supported on Web and will crash your app if you try to use it there.
   if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
     FlutterError.onError = (FlutterErrorDetails errorDetails) {
       FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
@@ -35,7 +30,6 @@ Future<void> main() async {
     };
   }
 
-  // Analytics is supported on Web, so this is fine to leave outside the check
   await analytics.setAnalyticsCollectionEnabled(true);
 
   await analytics.logEvent(

@@ -63,16 +63,13 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
         final DateTime? memDate = _repository.parseDate(memory.date);
         
         if (memDate != null) {
-          // Check Start Date (ignoring time, comparing start of day)
           if (event.startDate != null) {
             final start = DateTime(event.startDate!.year, event.startDate!.month, event.startDate!.day);
-             // We compare assuming the memory date is strictly after or equal to start
             if (memDate.isBefore(start)) {
               return false;
             }
           }
 
-          // Check End Date (set to end of that day)
           if (event.endDate != null) {
             final end = DateTime(event.endDate!.year, event.endDate!.month, event.endDate!.day, 23, 59, 59);
             if (memDate.isAfter(end)) {

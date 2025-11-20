@@ -30,14 +30,11 @@ class _SearchPageState extends State<SearchPage> {
   DateTime? _startDate;
   DateTime? _endDate;
 
-  // --- FIX PART 1: Create a variable to hold the BLoC ---
   late MemoryBloc _memoryBloc;
 
-  // --- FIX PART 2: Capture the BLoC while context is valid ---
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // We save the reference here because context is safe to use
     _memoryBloc = context.read<MemoryBloc>();
   }
 
@@ -49,8 +46,6 @@ class _SearchPageState extends State<SearchPage> {
     _startDateController.dispose();
     _endDateController.dispose();
 
-    // --- FIX PART 3: Use the saved reference instead of context ---
-    // We don't need 'if (mounted)' here because we aren't using context anymore
     _memoryBloc.add(LoadMemories());
     
     super.dispose();

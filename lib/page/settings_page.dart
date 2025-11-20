@@ -31,7 +31,6 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 16),
         _buildAccountCard(),
         const SizedBox(height: 16),
-        // --- ADDED THIS NEW DANGER ZONE CARD ---
         _buildDangerZoneCard(),
         const SizedBox(height: 24),
       ],

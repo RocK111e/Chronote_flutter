@@ -59,7 +59,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: MemoryTile(memory: memory),
                   )),
-            const SizedBox(height: 80), // Bottom padding
+            const SizedBox(height: 80), 
           ],
         );
       },
@@ -161,9 +161,8 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget _buildDaysGrid(List<Memory> memories) {
     final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
     final firstDayOfMonth = DateTime(_focusedDay.year, _focusedDay.month, 1);
-    final startingWeekday = firstDayOfMonth.weekday % 7; // 0 = Sunday
+    final startingWeekday = firstDayOfMonth.weekday % 7; 
 
-    // Calculate total slots needed (padding + days)
     final totalSlots = startingWeekday + daysInMonth;
 
     return GridView.builder(
@@ -181,7 +180,6 @@ class _CalendarPageState extends State<CalendarPage> {
         final day = index - startingWeekday + 1;
         final date = DateTime(_focusedDay.year, _focusedDay.month, day);
 
-        // Check if this date has any memory
         final hasEntry = memories.any((m) {
           final mDate = DateHelper.parse(m.date);
           return DateHelper.isSameDay(mDate, date);

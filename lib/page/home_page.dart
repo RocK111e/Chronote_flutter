@@ -46,13 +46,11 @@ class HomePage extends StatelessWidget {
           }
 
           return ListView.builder(
-            // Add +1 to count for the Header widget
             itemCount: memories.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _buildHomeHeader(memories.length);
               }
-              // Access memory at index - 1 because index 0 is the header
               final memory = memories[index - 1];
               return Padding(
                 padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
@@ -102,7 +100,7 @@ class HomePage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildHomeHeader(0), // Still show header
+          _buildHomeHeader(0), 
           const SizedBox(height: 40),
           Icon(Icons.note_alt_outlined, size: 64, color: Colors.grey[700]),
           const SizedBox(height: 16),

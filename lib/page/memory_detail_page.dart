@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../models/memory.dart';
-import '../utils/date_helper.dart'; // Import Helper
+import '../utils/date_helper.dart'; 
 
 class MemoryDetailPage extends StatelessWidget {
   final Memory memory;
@@ -11,7 +11,6 @@ class MemoryDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format the date for display
     final displayDate = DateHelper.formatDisplayDate(memory.date);
 
     return Scaffold(
@@ -60,7 +59,6 @@ class MemoryDetailPage extends StatelessWidget {
                   children: [
                     const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
                     const SizedBox(width: 8.0),
-                    // USE FORMATTED DATE HERE
                     Text(
                       displayDate, 
                       style: TextStyle(color: Colors.grey[400]),
