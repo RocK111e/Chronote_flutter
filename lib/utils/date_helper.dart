@@ -3,20 +3,26 @@
 import 'package:intl/intl.dart';
 
 class DateHelper {
-  static DateTime? parseDate(String dateString) {
-    // Format 1: With Day of Week (e.g., Tuesday, October 8, 2025 at 03:00 AM)
-    try {
-      return DateFormat("EEEE, MMMM d, yyyy 'at' hh:mm a").parse(dateString);
-    } catch (_) {}
+  /// Standard format for display: "Tuesday, October 8, 2025 at 03:00 AM"
+  static final DateFormat _displayFormatter = DateFormat("EEEE, MMMM d, yyyy 'at' hh:mm a");
 
-    // Format 2: Without Day of Week (e.g., October 5, 2025 at 03:00 AM)
+  /// Parses an ISO 8601 string (Storage format) into a DateTime
+  static DateTime? parse(String dateString) {
     try {
-      return DateFormat("MMMM d, yyyy 'at' hh:mm a").parse(dateString);
-    } catch (_) {}
-
-    return null;
+      return DateTime.parse(dateString);
+    } catch (_) {
+      return null;
+    }
   }
 
+  /// Takes the stored string (ISO) and returns the formatted display string
+  static String formatDisplayDate(String isoDateString) {
+    final date = parse(isoDateString);
+    if (date == null) return isoDateString; // Fallback if parsing fails
+    return _displayFormatter.format(date);
+  }
+
+  /// Helper to check if two dates are the same day
   static bool isSameDay(DateTime? a, DateTime? b) {
     if (a == null || b == null) return false;
     return a.year == b.year && a.month == b.month && a.day == b.day;

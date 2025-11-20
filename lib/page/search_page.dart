@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../bloc/memory/memory_bloc.dart';
 import '../bloc/memory/memory_event.dart';
 import '../bloc/memory/memory_state.dart';
@@ -16,22 +18,40 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  bool _showFilters = false; // Default hidden
+  bool _showFilters = false;
+  
+  // Controllers
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _tagController = TextEditingController();
   final TextEditingController _emojiController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  // --- FIX PART 1: Create a variable to hold the BLoC ---
+  late MemoryBloc _memoryBloc;
+
+  // --- FIX PART 2: Capture the BLoC while context is valid ---
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // We save the reference here because context is safe to use
+    _memoryBloc = context.read<MemoryBloc>();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     _tagController.dispose();
     _emojiController.dispose();
-    
-    // Reset the Global BLoC to show all memories when leaving search
-    // This prevents the Home/Calendar pages from staying filtered
-    if (mounted) {
-      context.read<MemoryBloc>().add(LoadMemories());
-    }
+    _startDateController.dispose();
+    _endDateController.dispose();
+
+    // --- FIX PART 3: Use the saved reference instead of context ---
+    // We don't need 'if (mounted)' here because we aren't using context anymore
+    _memoryBloc.add(LoadMemories());
     
     super.dispose();
   }
@@ -47,8 +67,95 @@ class _SearchPageState extends State<SearchPage> {
       searchQuery: query,
       tags: tags,
       emoji: emoji.isNotEmpty ? emoji : null,
-      // Date filtering can be added here if we wire up a DatePicker
+      startDate: _startDate,
+      endDate: _endDate,
     ));
+  }
+
+  void _showEmojiPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E1E),
+      builder: (context) {
+        return EmojiPicker(
+          onEmojiSelected: (category, emoji) {
+            setState(() {
+              _emojiController.text = emoji.emoji;
+            });
+            _applyFilters();
+            Navigator.pop(context);
+          },
+          config: const Config(
+            height: 300,
+            checkPlatformCompatibility: true,
+            emojiViewConfig: EmojiViewConfig(
+              backgroundColor: Color(0xFF1E1E1E),
+              columns: 7,
+              emojiSizeMax: 28,
+              verticalSpacing: 0,
+              horizontalSpacing: 0,
+              gridPadding: EdgeInsets.zero,
+              recentsLimit: 28,
+              replaceEmojiOnLimitExceed: false,
+              noRecents: Text('No Recents', style: TextStyle(fontSize: 20, color: Colors.white), textAlign: TextAlign.center),
+            ),
+            categoryViewConfig: CategoryViewConfig(
+              backgroundColor: Color(0xFF1E1E1E),
+              indicatorColor: Colors.blue,
+              iconColorSelected: Colors.blue,
+              iconColor: Colors.grey,
+              tabIndicatorAnimDuration: kTabScrollDuration,
+              dividerColor: Colors.transparent,
+            ),
+            bottomActionBarConfig: BottomActionBarConfig(enabled: false),
+            searchViewConfig: SearchViewConfig(
+               backgroundColor: Color(0xFF1E1E1E),
+               buttonIconColor: Colors.grey, 
+            )
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
+    final initialDate = isStart 
+        ? (_startDate ?? DateTime.now()) 
+        : (_endDate ?? DateTime.now());
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              surface: Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF1E1E1E),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+          _startDateController.text = DateFormat('MM/dd/yyyy').format(picked);
+        } else {
+          _endDate = picked;
+          _endDateController.text = DateFormat('MM/dd/yyyy').format(picked);
+        }
+      });
+      _applyFilters();
+    }
   }
 
   void _toggleFilters() {
@@ -61,7 +168,15 @@ class _SearchPageState extends State<SearchPage> {
     _searchController.clear();
     _tagController.clear();
     _emojiController.clear();
-    context.read<MemoryBloc>().add(LoadMemories()); // Reset
+    _startDateController.clear();
+    _endDateController.clear();
+    
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+
+    context.read<MemoryBloc>().add(LoadMemories());
   }
 
   @override
@@ -83,10 +198,15 @@ class _SearchPageState extends State<SearchPage> {
             _buildResultsHeader(results.length),
             const SizedBox(height: 16),
             if (results.isEmpty)
-               Padding(
-                 padding: const EdgeInsets.all(16.0),
-                 child: Center(child: Text("No results found", style: TextStyle(color: Colors.grey[600]))),
-               )
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(
+                  child: Text(
+                    "No results found", 
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+              )
             else
               ...results.map((memory) => Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
@@ -159,7 +279,7 @@ class _SearchPageState extends State<SearchPage> {
       controller: _searchController,
       style: const TextStyle(color: Colors.white),
       decoration: _inputDecoration('Search by text...', prefixIcon: Icons.search),
-      onChanged: (_) => _applyFilters(), // Real-time filtering
+      onChanged: (_) => _applyFilters(),
     );
   }
 
@@ -180,6 +300,8 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildFilterSection() {
+    final hasEmoji = _emojiController.text.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -196,13 +318,74 @@ class _SearchPageState extends State<SearchPage> {
         const SizedBox(height: 16),
         Text('Filter by Emoji', style: TextStyle(color: Colors.grey[400])),
         const SizedBox(height: 8),
+        
         TextField(
           controller: _emojiController,
-          style: const TextStyle(color: Colors.white),
-          decoration: _inputDecoration('Enter an emoji...', prefixIcon: Icons.emoji_emotions_outlined),
-          onChanged: (_) => _applyFilters(),
+          readOnly: true,
+          onTap: _showEmojiPicker,
+          style: TextStyle(
+            color: Colors.white, 
+            fontFamily: hasEmoji ? 'NotoColorEmoji' : null, 
+            fontSize: hasEmoji ? 24 : 16, 
+          ),
+          decoration: _inputDecoration(
+            'Select an emoji...', 
+            prefixIcon: Icons.emoji_emotions_outlined,
+            suffixIcon: hasEmoji ? Icons.close : null,
+          ).copyWith(
+            suffixIcon: hasEmoji 
+              ? IconButton(
+                  icon: Icon(Icons.close, color: Colors.grey[400], size: 20),
+                  onPressed: () {
+                    setState(() {
+                      _emojiController.clear();
+                    });
+                    _applyFilters();
+                  },
+                )
+              : null,
+          ),
         ),
-        
+
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Start Date', style: TextStyle(color: Colors.grey[400])),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _startDateController,
+                    readOnly: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDecoration('mm/dd/yyyy', suffixIcon: Icons.calendar_today_outlined),
+                    onTap: () => _selectDate(context, true),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('End Date', style: TextStyle(color: Colors.grey[400])),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _endDateController,
+                    readOnly: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: _inputDecoration('mm/dd/yyyy', suffixIcon: Icons.calendar_today_outlined),
+                    onTap: () => _selectDate(context, false),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
         const SizedBox(height: 24),
         TextButton(
           onPressed: _clearFilters,

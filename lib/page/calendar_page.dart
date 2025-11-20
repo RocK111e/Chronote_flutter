@@ -31,7 +31,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
         // Filter memories for the selected day
         final selectedDayMemories = allMemories.where((memory) {
-          final date = DateHelper.parseDate(memory.date);
+          final date = DateHelper.parse(memory.date);
           return DateHelper.isSameDay(date, _selectedDay);
         }).toList();
 
@@ -183,7 +183,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
         // Check if this date has any memory
         final hasEntry = memories.any((m) {
-          final mDate = DateHelper.parseDate(m.date);
+          final mDate = DateHelper.parse(m.date);
           return DateHelper.isSameDay(mDate, date);
         });
 

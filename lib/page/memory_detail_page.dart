@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../models/memory.dart';
+import '../utils/date_helper.dart'; // Import Helper
 
 class MemoryDetailPage extends StatelessWidget {
   final Memory memory;
@@ -10,6 +11,9 @@ class MemoryDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Format the date for display
+    final displayDate = DateHelper.formatDisplayDate(memory.date);
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -33,11 +37,11 @@ class MemoryDetailPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-            onPressed: () { /* TODO: Implement edit functionality */ },
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () { /* TODO: Implement delete functionality */ },
+            onPressed: () {},
           ),
         ],
       ),
@@ -52,24 +56,23 @@ class MemoryDetailPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header Row with Date and Emoji
                 Row(
                   children: [
                     const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
                     const SizedBox(width: 8.0),
+                    // USE FORMATTED DATE HERE
                     Text(
-                      memory.date,
+                      displayDate, 
                       style: TextStyle(color: Colors.grey[400]),
                     ),
                     
                     const Spacer(),
                     
-                    // ADDED: Emoji display with the white color fix
                     if (memory.emoji != null && memory.emoji!.isNotEmpty)
                       Text(
                         memory.emoji!,
                         style: const TextStyle(
-                          fontSize: 24.0, // Slightly larger for detail view
+                          fontSize: 24.0, 
                           fontFamily: 'NotoColorEmoji',
                         ),
                       ),

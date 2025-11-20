@@ -1,57 +1,43 @@
-import 'package:intl/intl.dart';
+// lib/data/memory_repository.dart
+
 import '../models/memory.dart';
+import '../utils/date_helper.dart';
 
 class MemoryRepository {
-  // Hardcoded Mock Data
+  // Hardcoded Mock Data using ISO 8601 Standard (YYYY-MM-DDTHH:MM:SS)
   final List<Memory> _mockMemories = const [
     Memory(
-      date: 'Tuesday, October 8, 2025 at 03:00 AM',
-      content: 'Test wor. Today was an incredible day! I went hiking up the mountain...',
+      date: '2025-10-08T03:00:00', // Was: Tuesday, October 8...
+      content: 'Today was an incredible day! I went hiking up the mountain...',
       tags: ['hiking', 'nature', 'adventure'],
       emoji: '⛰️',
     ),
     Memory(
-      date: 'Monday, October 7, 2025 at 03:00 AM',
+      date: '2025-10-07T03:00:00', // Was: Monday, October 7...
       content: 'Started reading a new book today called "The Midnight Library". Already 100 pages in...',
       imagePath: 'lib/mock/image.png',
       tags: ['books', 'coffee', 'relaxation'],
       emoji: '📚',
     ),
     Memory(
-      date: 'Sunday, October 6, 2025 at 10:00 PM',
+      date: '2025-10-06T22:00:00', // Was: Sunday, October 6...
       content: 'Just a simple note for today. Feeling grateful.',
       tags: ['gratitude'],
     ),
     Memory(
-      date: 'October 5, 2025 at 03:00 AM',
+      date: '2025-10-05T03:00:00', // Was: October 5...
       content: 'Family dinner tonight was wonderful. Mom made her famous lasagna.',
       tags: ['family', 'food', 'gratitude'],
     ),
   ];
 
   Future<List<Memory>> getMemories() async {
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate network
+    await Future.delayed(const Duration(milliseconds: 500));
     return _mockMemories;
   }
 
-  /// Parses the string date from Memory model into a DateTime object.
-  /// Handles formats:
-  /// 1. "Tuesday, October 8, 2025 at 03:00 AM"
-  /// 2. "October 5, 2025 at 03:00 AM"
+  // Updated to use the central DateHelper
   DateTime? parseDate(String dateString) {
-    // Format 1: With Day of Week (e.g., Tuesday, ...)
-    try {
-      return DateFormat("EEEE, MMMM d, yyyy 'at' hh:mm a").parse(dateString);
-    } catch (_) {
-      // Continue to next format if this fails
-    }
-
-    // Format 2: Without Day of Week
-    try {
-      return DateFormat("MMMM d, yyyy 'at' hh:mm a").parse(dateString);
-    } catch (e) {
-      // print("Error parsing date: $dateString - $e");
-      return null;
-    }
+    return DateHelper.parse(dateString);
   }
 }

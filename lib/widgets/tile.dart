@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/memory.dart';
 import '../page/memory_detail_page.dart';
 import '../firebase/analytics.dart';
+import '../utils/date_helper.dart'; // Import Helper
 
 class MemoryTile extends StatelessWidget {
   final Memory memory;
@@ -15,6 +16,9 @@ class MemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Format the date for display
+    final displayDate = DateHelper.formatDisplayDate(memory.date);
+
     return InkWell(
       onTap: () {
         analytics.logEvent(name: 'memory_tile_tapped');
@@ -42,8 +46,9 @@ class MemoryTile extends StatelessWidget {
                     children: [
                       const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
                       const SizedBox(width: 8.0),
+                      // USE FORMATTED DATE HERE
                       Text(
-                        memory.date,
+                        displayDate, 
                         style: TextStyle(color: Colors.grey[400]),
                       ),
                     ],
