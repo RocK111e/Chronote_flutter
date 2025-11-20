@@ -25,8 +25,8 @@ class MemoryTile extends StatelessWidget {
           ),
         );
       },
-      splashColor: Colors.blue.withValues(alpha: 0.2),
-      highlightColor: Colors.blue.withValues(alpha: 0.1),
+      splashColor: Colors.blue.withOpacity(0.2),
+      highlightColor: Colors.blue.withOpacity(0.1),
       child: Card(
         color: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -54,7 +54,10 @@ class MemoryTile extends StatelessWidget {
                   if (memory.emoji != null && memory.emoji!.isNotEmpty)
                     Text(
                       memory.emoji!,
-                      style: const TextStyle(fontSize: 22.0, fontFamily: 'Noto Emoji'),
+                      style: const TextStyle(
+                        fontSize: 22.0,
+                        fontFamily: 'NotoColorEmoji',
+                      ),
                     ),
                 ],
               ),

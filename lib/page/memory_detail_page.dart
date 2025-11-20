@@ -50,19 +50,33 @@ class MemoryDetailPage extends StatelessWidget {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min, // Make card wrap content
+              mainAxisSize: MainAxisSize.min,
               children: [
+                // Header Row with Date and Emoji
                 Row(
                   children: [
                     const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
                     const SizedBox(width: 8.0),
                     Text(
-                      memory.date, // Use data from the memory object
+                      memory.date,
                       style: TextStyle(color: Colors.grey[400]),
                     ),
+                    
+                    const Spacer(),
+                    
+                    // ADDED: Emoji display with the white color fix
+                    if (memory.emoji != null && memory.emoji!.isNotEmpty)
+                      Text(
+                        memory.emoji!,
+                        style: const TextStyle(
+                          fontSize: 24.0, // Slightly larger for detail view
+                          fontFamily: 'NotoColorEmoji',
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 16.0),
+                
                 if (memory.imagePath != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),

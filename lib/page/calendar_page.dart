@@ -1,33 +1,68 @@
 // lib/page/calendar_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import '../bloc/memory/memory_bloc.dart';
+import '../bloc/memory/memory_state.dart';
 import '../models/memory.dart';
+import '../utils/date_helper.dart';
 import '../widgets/tile.dart';
 
-class CalendarPage extends StatelessWidget {
+class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    const sampleMemory = Memory(
-      date: 'October 5, 2025 at 03:00 AM',
-      content: 'Family dinner tonight was wonderful. Mom made her famous lasagna and we spent hours just talking and laughing together. These moments are so precious....',
-      tags: ['family', 'food', 'gratitude'],
-    );
+  State<CalendarPage> createState() => _CalendarPageState();
+}
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 24),
-        _buildCalendarView(),
-        const SizedBox(height: 32),
-        _buildEntriesForDateHeader(),
-        const SizedBox(height: 16),
-        MemoryTile(
-          memory: sampleMemory,
-        ),
-      ],
+class _CalendarPageState extends State<CalendarPage> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime _selectedDay = DateTime.now();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<MemoryBloc, MemoryState>(
+      builder: (context, state) {
+        List<Memory> allMemories = [];
+        if (state is MemoryLoaded) {
+          allMemories = state.memories;
+        }
+
+        // Filter memories for the selected day
+        final selectedDayMemories = allMemories.where((memory) {
+          final date = DateHelper.parseDate(memory.date);
+          return DateHelper.isSameDay(date, _selectedDay);
+        }).toList();
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildCalendarView(allMemories),
+            const SizedBox(height: 32),
+            _buildEntriesForDateHeader(),
+            const SizedBox(height: 16),
+            if (selectedDayMemories.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "No entries for this day",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+              )
+            else
+              ...selectedDayMemories.map((memory) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: MemoryTile(memory: memory),
+                  )),
+            const SizedBox(height: 80), // Bottom padding
+          ],
+        );
+      },
     );
   }
 
@@ -61,7 +96,7 @@ class CalendarPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCalendarView() {
+  Widget _buildCalendarView(List<Memory> memories) {
     return Card(
       color: const Color(0xFF1E1E1E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -73,7 +108,7 @@ class CalendarPage extends StatelessWidget {
             const SizedBox(height: 24),
             _buildWeekdays(),
             const SizedBox(height: 16),
-            _buildDaysGrid(),
+            _buildDaysGrid(memories),
           ],
         ),
       ),
@@ -86,11 +121,15 @@ class CalendarPage extends StatelessWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left, color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            setState(() {
+              _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+            });
+          },
         ),
-        const Text(
-          'October 2025',
-          style: TextStyle(
+        Text(
+          DateFormat('MMMM yyyy').format(_focusedDay),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -98,7 +137,11 @@ class CalendarPage extends StatelessWidget {
         ),
         IconButton(
           icon: const Icon(Icons.chevron_right, color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            setState(() {
+              _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+            });
+          },
         ),
       ],
     );
@@ -108,32 +151,65 @@ class CalendarPage extends StatelessWidget {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: days.map((day) => Text(day, style: TextStyle(color: Colors.grey[600]))).toList(),
+      children: days
+          .map((day) =>
+              Text(day, style: TextStyle(color: Colors.grey[600])))
+          .toList(),
     );
   }
 
-  Widget _buildDaysGrid() {
+  Widget _buildDaysGrid(List<Memory> memories) {
+    final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
+    final firstDayOfMonth = DateTime(_focusedDay.year, _focusedDay.month, 1);
+    final startingWeekday = firstDayOfMonth.weekday % 7; // 0 = Sunday
+
+    // Calculate total slots needed (padding + days)
+    final totalSlots = startingWeekday + daysInMonth;
+
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
       ),
-      itemCount: 31, 
+      itemCount: totalSlots,
       itemBuilder: (context, index) {
-        final day = index + 1;
-        if (day == 5) return _buildDayCell(day.toString(), isSelected: true);
-        if (day == 3 || day == 7 || day == 8) return _buildDayCell(day.toString(), hasEntry: true);
-        return _buildDayCell(day.toString());
+        if (index < startingWeekday) {
+          return const SizedBox.shrink();
+        }
+
+        final day = index - startingWeekday + 1;
+        final date = DateTime(_focusedDay.year, _focusedDay.month, day);
+
+        // Check if this date has any memory
+        final hasEntry = memories.any((m) {
+          final mDate = DateHelper.parseDate(m.date);
+          return DateHelper.isSameDay(mDate, date);
+        });
+
+        final isSelected = DateHelper.isSameDay(date, _selectedDay);
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedDay = date;
+            });
+          },
+          child: _buildDayCell(day.toString(),
+              isSelected: isSelected, hasEntry: hasEntry),
+        );
       },
     );
   }
 
-  Widget _buildDayCell(String day, {bool isSelected = false, bool hasEntry = false}) {
+  Widget _buildDayCell(String day,
+      {bool isSelected = false, bool hasEntry = false}) {
     return Container(
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isSelected ? Colors.blue : (hasEntry ? Colors.grey[800] : Colors.transparent),
+        color: isSelected
+            ? Colors.blue
+            : (hasEntry ? Colors.grey[800] : Colors.transparent),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -147,7 +223,7 @@ class CalendarPage extends StatelessWidget {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            if (hasEntry) ...[
+            if (hasEntry && !isSelected) ...[
               const SizedBox(height: 2),
               Container(
                 width: 4,
@@ -165,9 +241,9 @@ class CalendarPage extends StatelessWidget {
   }
 
   Widget _buildEntriesForDateHeader() {
-    return const Text(
-      'Entries for October 5, 2025',
-      style: TextStyle(
+    return Text(
+      'Entries for ${DateFormat('MMMM d, yyyy').format(_selectedDay)}',
+      style: const TextStyle(
         color: Colors.white,
         fontSize: 18,
         fontWeight: FontWeight.bold,

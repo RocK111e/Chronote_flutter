@@ -1,6 +1,10 @@
 // lib/page/search_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/memory/memory_bloc.dart';
+import '../bloc/memory/memory_event.dart';
+import '../bloc/memory/memory_state.dart';
 import '../models/memory.dart';
 import '../widgets/tile.dart';
 
@@ -12,7 +16,40 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  bool _showFilters = true;
+  bool _showFilters = false; // Default hidden
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
+  final TextEditingController _emojiController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _tagController.dispose();
+    _emojiController.dispose();
+    
+    // Reset the Global BLoC to show all memories when leaving search
+    // This prevents the Home/Calendar pages from staying filtered
+    if (mounted) {
+      context.read<MemoryBloc>().add(LoadMemories());
+    }
+    
+    super.dispose();
+  }
+
+  void _applyFilters() {
+    final query = _searchController.text.trim();
+    final tags = _tagController.text.isNotEmpty
+        ? _tagController.text.split(',').map((e) => e.trim()).toList()
+        : null;
+    final emoji = _emojiController.text.trim();
+
+    context.read<MemoryBloc>().add(FilterMemories(
+      searchQuery: query,
+      tags: tags,
+      emoji: emoji.isNotEmpty ? emoji : null,
+      // Date filtering can be added here if we wire up a DatePicker
+    ));
+  }
 
   void _toggleFilters() {
     setState(() {
@@ -20,27 +57,45 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  void _clearFilters() {
+    _searchController.clear();
+    _tagController.clear();
+    _emojiController.clear();
+    context.read<MemoryBloc>().add(LoadMemories()); // Reset
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Updated sample data to include an emoji
-    const sampleResult = Memory(
-      date: 'October 7, 2025 at 03:00 AM',
-      content: 'Started reading a new book today called "The Midnight Library". Already 100 pages in and I can\'t put it down. The concept of parallel lives is fascina...',
-      tags: ['books', 'coffee', 'relaxation'],
-      emoji: '📚', // Added emoji for the result tile
-    );
+    return BlocBuilder<MemoryBloc, MemoryState>(
+      builder: (context, state) {
+        List<Memory> results = [];
+        if (state is MemoryLoaded) {
+          results = state.memories;
+        }
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 24),
-        _buildSearchCard(),
-        const SizedBox(height: 32),
-        _buildResultsHeader(),
-        const SizedBox(height: 16),
-        MemoryTile(memory: sampleResult),
-      ],
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildSearchCard(),
+            const SizedBox(height: 32),
+            _buildResultsHeader(results.length),
+            const SizedBox(height: 16),
+            if (results.isEmpty)
+               Padding(
+                 padding: const EdgeInsets.all(16.0),
+                 child: Center(child: Text("No results found", style: TextStyle(color: Colors.grey[600]))),
+               )
+            else
+              ...results.map((memory) => Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: MemoryTile(memory: memory),
+              )),
+            const SizedBox(height: 80),
+          ],
+        );
+      },
     );
   }
 
@@ -101,8 +156,10 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildSearchTextField() {
     return TextField(
+      controller: _searchController,
       style: const TextStyle(color: Colors.white),
       decoration: _inputDecoration('Search by text...', prefixIcon: Icons.search),
+      onChanged: (_) => _applyFilters(), // Real-time filtering
     );
   }
 
@@ -116,7 +173,7 @@ class _SearchPageState extends State<SearchPage> {
       ),
       style: TextButton.styleFrom(
         minimumSize: const Size(double.infinity, 48),
-        backgroundColor: Colors.grey.withValues(alpha: 0.1),
+        backgroundColor: Colors.grey.withOpacity(0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
       ),
     );
@@ -130,61 +187,28 @@ class _SearchPageState extends State<SearchPage> {
         Text('Filter by Tags', style: TextStyle(color: Colors.grey[400])),
         const SizedBox(height: 8),
         TextField(
+          controller: _tagController,
           style: const TextStyle(color: Colors.white),
-          decoration: _inputDecoration('Enter tags separated by commas...'),
+          decoration: _inputDecoration('Enter tags (comma separated)...'),
+          onChanged: (_) => _applyFilters(),
         ),
         
         const SizedBox(height: 16),
         Text('Filter by Emoji', style: TextStyle(color: Colors.grey[400])),
         const SizedBox(height: 8),
         TextField(
+          controller: _emojiController,
           style: const TextStyle(color: Colors.white),
           decoration: _inputDecoration('Enter an emoji...', prefixIcon: Icons.emoji_emotions_outlined),
+          onChanged: (_) => _applyFilters(),
         ),
         
-
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Start Date', style: TextStyle(color: Colors.grey[400])),
-                  const SizedBox(height: 8),
-                  TextField(
-                    readOnly: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('10.09.2025', suffixIcon: Icons.calendar_today_outlined),
-                    onTap: () { /* TODO: Show date picker */ },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('End Date', style: TextStyle(color: Colors.grey[400])),
-                  const SizedBox(height: 8),
-                  TextField(
-                    readOnly: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('10.12.2025', suffixIcon: Icons.calendar_today_outlined),
-                    onTap: () { /* TODO: Show date picker */ },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 24),
         TextButton(
-          onPressed: () {},
+          onPressed: _clearFilters,
           style: TextButton.styleFrom(
             minimumSize: const Size(double.infinity, 48),
-            side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+            side: BorderSide(color: Colors.grey.withOpacity(0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
           ),
           child: Text('Clear All Filters', style: TextStyle(color: Colors.grey[400])),
@@ -193,10 +217,10 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildResultsHeader() {
-    return const Text(
-      '1 result',
-      style: TextStyle(
+  Widget _buildResultsHeader(int count) {
+    return Text(
+      '$count result${count != 1 ? 's' : ''}',
+      style: const TextStyle(
         color: Colors.white,
         fontSize: 18,
         fontWeight: FontWeight.bold,
@@ -209,7 +233,7 @@ class _SearchPageState extends State<SearchPage> {
       hintText: hintText,
       hintStyle: TextStyle(color: Colors.grey[600]),
       filled: true,
-      fillColor: Colors.grey.withValues(alpha: 0.1),
+      fillColor: Colors.grey.withOpacity(0.1),
       prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: Colors.grey[400], size: 20) : null,
       suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: Colors.grey[400], size: 20) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

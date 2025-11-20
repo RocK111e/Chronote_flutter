@@ -1,45 +1,68 @@
 // lib/page/home_page.dart
 
 import 'package:flutter/material.dart';
-import '../models/memory.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/memory/memory_bloc.dart';
+import '../bloc/memory/memory_state.dart';
 import '../widgets/tile.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  final List<Memory> memories = const [
-  Memory(
-    date: 'Tuesday, October 8, 2025 at 03:00 AM',
-    content: 'Today was an incredible day! I went hiking...',
-    tags: ['hiking', 'nature', 'adventure'],
-    emoji: '⛰️',
-  ),
-  Memory(
-    date: 'Monday, October 7, 2025 at 03:00 AM',
-    content: 'Started reading a new book today...',
-    imagePath: 'lib/mock/image.png',
-    tags: ['books', 'coffee', 'relaxation'],
-    emoji: '📚',
-  ),
-  Memory(
-    date: 'Sunday, October 6, 2025 at 10:00 PM',
-    content: 'Just a simple note for today.',
-  ),
-];
-
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: memories.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _buildHomeHeader(memories.length);
+    return BlocBuilder<MemoryBloc, MemoryState>(
+      builder: (context, state) {
+        // 1. Loading State
+        if (state is MemoryLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.blue),
+          );
         }
-        final memory = memories[index - 1];
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
-          child: MemoryTile(memory: memory),
-        );
+
+        // 2. Error State
+        if (state is MemoryError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  state.message,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // 3. Loaded State
+        if (state is MemoryLoaded) {
+          final memories = state.memories;
+
+          if (memories.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return ListView.builder(
+            // Add +1 to count for the Header widget
+            itemCount: memories.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _buildHomeHeader(memories.length);
+              }
+              // Access memory at index - 1 because index 0 is the header
+              final memory = memories[index - 1];
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                child: MemoryTile(memory: memory),
+              );
+            },
+          );
+        }
+
+        return const SizedBox.shrink();
       },
     );
   }
@@ -70,6 +93,24 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildHomeHeader(0), // Still show header
+          const SizedBox(height: 40),
+          Icon(Icons.note_alt_outlined, size: 64, color: Colors.grey[700]),
+          const SizedBox(height: 16),
+          Text(
+            'No memories yet',
+            style: TextStyle(color: Colors.grey[500], fontSize: 18),
+          ),
+        ],
       ),
     );
   }
