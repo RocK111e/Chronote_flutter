@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart'; 
 import '../../models/memory.dart';
 import '../../data/memory_repository.dart';
 import 'memory_event.dart';
