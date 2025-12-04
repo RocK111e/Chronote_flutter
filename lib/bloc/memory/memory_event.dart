@@ -1,6 +1,7 @@
 // lib/bloc/memory/memory_event.dart
 
 import '../../models/memory.dart';
+import 'package:image_picker/image_picker.dart'; // Needed for XFile typing
 
 abstract class MemoryEvent {}
 
@@ -8,19 +9,20 @@ class LoadMemories extends MemoryEvent {}
 
 class AddMemory extends MemoryEvent {
   final Memory memory;
-  final dynamic imageFile; 
+  final XFile? imageFile; 
   AddMemory(this.memory, {this.imageFile});
 }
 
 class UpdateMemory extends MemoryEvent {
   final Memory memory;
-  final dynamic newImageFile;
+  final XFile? newImageFile;
   UpdateMemory(this.memory, {this.newImageFile});
 }
 
+// UPDATED: Now requires the full Memory object
 class DeleteMemory extends MemoryEvent {
-  final String id;
-  DeleteMemory(this.id);
+  final Memory memory;
+  DeleteMemory(this.memory);
 }
 
 class FilterMemories extends MemoryEvent {

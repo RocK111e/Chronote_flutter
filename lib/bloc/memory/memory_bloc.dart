@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart'; 
 import '../../models/memory.dart';
 import '../../data/memory_repository.dart';
 import 'memory_event.dart';
@@ -35,8 +35,8 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
     try {
       String? imageUrl = event.memory.imageUrl;
       
-      if (event.imageFile != null && event.imageFile is XFile) {
-        imageUrl = await _repository.uploadImage(event.imageFile);
+      if (event.imageFile != null) {
+        imageUrl = await _repository.uploadImage(event.imageFile!);
       }
 
       final newMemory = event.memory.copyWith(imageUrl: imageUrl);
@@ -52,8 +52,8 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
     try {
       String? imageUrl = event.memory.imageUrl;
 
-      if (event.newImageFile != null && event.newImageFile is XFile) {
-        imageUrl = await _repository.uploadImage(event.newImageFile);
+      if (event.newImageFile != null) {
+        imageUrl = await _repository.uploadImage(event.newImageFile!);
       }
 
       final updatedMemory = event.memory.copyWith(imageUrl: imageUrl);
@@ -64,11 +64,16 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
     }
   }
 
+  // UPDATED: Handles deleting image + doc
   Future<void> _onDeleteMemory(DeleteMemory event, Emitter<MemoryState> emit) async {
     try {
-      await _repository.deleteMemory(event.id);
-      _allMemories.removeWhere((m) => m.id == event.id);
+      // Pass the whole memory object to repo
+      await _repository.deleteMemory(event.memory);
+      
+      // Optimistic update
+      _allMemories.removeWhere((m) => m.id == event.memory.id);
       emit(MemoryLoaded(List.from(_allMemories)));
+      
       add(LoadMemories());
     } catch (e) {
       emit(MemoryError("Failed to delete memory"));

@@ -162,7 +162,8 @@ class MemoryDetailPage extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx); 
-              context.read<MemoryBloc>().add(DeleteMemory(memory.id!));
+              // UPDATED: Passing the full memory object
+              context.read<MemoryBloc>().add(DeleteMemory(memory));
               Navigator.pop(context); 
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
