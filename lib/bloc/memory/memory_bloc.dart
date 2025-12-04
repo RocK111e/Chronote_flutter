@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart'; // Import XFile
+import 'package:image_picker/image_picker.dart';
 import '../../models/memory.dart';
 import '../../data/memory_repository.dart';
 import 'memory_event.dart';
@@ -35,7 +35,6 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
     try {
       String? imageUrl = event.memory.imageUrl;
       
-      // UPDATED: Check for XFile
       if (event.imageFile != null && event.imageFile is XFile) {
         imageUrl = await _repository.uploadImage(event.imageFile);
       }
@@ -53,7 +52,6 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
     try {
       String? imageUrl = event.memory.imageUrl;
 
-      // UPDATED: Check for XFile
       if (event.newImageFile != null && event.newImageFile is XFile) {
         imageUrl = await _repository.uploadImage(event.newImageFile);
       }

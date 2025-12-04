@@ -89,7 +89,6 @@ class MemoryDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16.0),
                 
-                // Display Image from Network (Firestore Storage)
                 if (memory.imageUrl != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
@@ -162,9 +161,9 @@ class MemoryDetailPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(ctx); // Close dialog
+              Navigator.pop(ctx); 
               context.read<MemoryBloc>().add(DeleteMemory(memory.id!));
-              Navigator.pop(context); // Go back to list
+              Navigator.pop(context); 
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),

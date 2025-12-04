@@ -8,7 +8,7 @@ class LoadMemories extends MemoryEvent {}
 
 class AddMemory extends MemoryEvent {
   final Memory memory;
-  final dynamic imageFile; // File object (Platform dependent)
+  final dynamic imageFile; 
   AddMemory(this.memory, {this.imageFile});
 }
 

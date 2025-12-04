@@ -83,7 +83,7 @@ class MemoryTile extends StatelessWidget {
                           width: double.infinity,
                           height: 200,
                           errorBuilder: (context, error, stackTrace) =>
-                              const SizedBox.shrink(), // Gracefully hide on error
+                              const SizedBox.shrink(),
                         ),
                       ),
                     ),

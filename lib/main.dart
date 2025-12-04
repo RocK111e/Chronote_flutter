@@ -12,9 +12,9 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart'; 
 
 import 'firebase_options.dart';
-import 'data/memory_repository.dart'; // Import Repo
-import 'bloc/memory/memory_bloc.dart'; // Import Bloc
-import 'bloc/memory/memory_event.dart'; // Import Event
+import 'data/memory_repository.dart'; 
+import 'bloc/memory/memory_bloc.dart'; 
+import 'bloc/memory/memory_event.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +44,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // UPDATED: BlocProvider is now here at the top level
     return BlocProvider(
       create: (context) => MemoryBloc(MemoryRepository())..add(LoadMemories()),
       child: MaterialApp(

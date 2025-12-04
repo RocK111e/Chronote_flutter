@@ -153,7 +153,6 @@ class _EditMemoryPageState extends State<EditMemoryPage> {
               onSurface: Colors.white,
             ),
           ),
-          // UPDATED: Force 24-hour format in the picker
           child: MediaQuery(
             data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
             child: child!,
@@ -317,7 +316,6 @@ class _EditMemoryPageState extends State<EditMemoryPage> {
     );
   }
 
-  // ... (Helper methods remain the same, just keeping the file complete)
   Widget _buildLabel(String text) {
     return Text(
       text,
