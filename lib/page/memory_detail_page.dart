@@ -1,8 +1,12 @@
 // lib/page/memory_detail_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/memory/memory_bloc.dart';
+import '../bloc/memory/memory_event.dart';
 import '../models/memory.dart';
-import '../utils/date_helper.dart'; 
+import '../utils/date_helper.dart';
+import 'edit_memory_page.dart';
 
 class MemoryDetailPage extends StatelessWidget {
   final Memory memory;
@@ -27,7 +31,7 @@ class MemoryDetailPage extends StatelessWidget {
                 children: [
                   Icon(Icons.arrow_back, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Back to Home', style: TextStyle(color: Colors.white, fontSize: 18)),
+                  Text('Back', style: TextStyle(color: Colors.white, fontSize: 18)),
                 ],
               ),
             ),
@@ -36,11 +40,20 @@ class MemoryDetailPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditMemoryPage(memory: memory),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () {},
+            onPressed: () {
+              _showDeleteConfirmation(context);
+            },
           ),
         ],
       ),
@@ -63,9 +76,7 @@ class MemoryDetailPage extends StatelessWidget {
                       displayDate, 
                       style: TextStyle(color: Colors.grey[400]),
                     ),
-                    
                     const Spacer(),
-                    
                     if (memory.emoji != null && memory.emoji!.isNotEmpty)
                       Text(
                         memory.emoji!,
@@ -78,16 +89,23 @@ class MemoryDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16.0),
                 
-                if (memory.imagePath != null)
+                // Display Image from Network (Firestore Storage)
+                if (memory.imageUrl != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
-                        child: Image.asset(
-                          memory.imagePath!,
+                        child: Image.network(
+                          memory.imageUrl!,
                           fit: BoxFit.contain,
                           width: double.infinity,
                           height: 200,
+                          loadingBuilder: (ctx, child, progress) {
+                            if (progress == null) return child;
+                            return const Center(child: CircularProgressIndicator());
+                          },
+                          errorBuilder: (ctx, error, stack) => 
+                            const Icon(Icons.broken_image, size: 50, color: Colors.grey),
                         ),
                       ),
                     ),
@@ -123,6 +141,34 @@ class MemoryDetailPage extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(color: Colors.blue, fontSize: 12.0),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Delete Memory?', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'This action cannot be undone.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Close dialog
+              context.read<MemoryBloc>().add(DeleteMemory(memory.id!));
+              Navigator.pop(context); // Go back to list
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

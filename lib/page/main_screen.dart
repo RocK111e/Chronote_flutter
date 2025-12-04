@@ -1,14 +1,12 @@
 // lib/page/main_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; 
-import '../data/memory_repository.dart'; 
-import '../bloc/memory/memory_bloc.dart'; 
-import '../bloc/memory/memory_event.dart'; 
+// BlocProvider is removed from here as it is now in main.dart
 import 'home_page.dart';
 import 'calendar_page.dart';
 import 'search_page.dart';
 import 'settings_page.dart';
+import 'edit_memory_page.dart';
 import '../widgets/navbar.dart';
 
 class MainScreen extends StatefulWidget {
@@ -36,23 +34,28 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => MemoryBloc(MemoryRepository())..add(LoadMemories()),
-      child: Scaffold(
-        backgroundColor: const Color(0xFF121212),
-        body: _pages.elementAt(_selectedIndex),
-        floatingActionButton: _selectedIndex == 0
-            ? FloatingActionButton(
-                onPressed: () {
-                },
-                backgroundColor: Colors.blue,
-                child: const Icon(Icons.add, color: Colors.white),
-              )
-            : null,
-        bottomNavigationBar: NavBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-        ),
+    // UPDATED: Removed BlocProvider wrapper. 
+    // It now uses the one provided by main.dart
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: _pages.elementAt(_selectedIndex),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditMemoryPage(),
+                  ),
+                );
+              },
+              backgroundColor: Colors.blue,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+      bottomNavigationBar: NavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

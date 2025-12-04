@@ -3,7 +3,8 @@
 import 'package:intl/intl.dart';
 
 class DateHelper {
-  static final DateFormat _displayFormatter = DateFormat("EEEE, MMMM d, yyyy 'at' hh:mm a");
+  // UPDATED: Short Day (EEE), Short Month (MMM), 24-Hour Time (HH:mm)
+  static final DateFormat _displayFormatter = DateFormat("EEE, MMM d, yyyy HH:mm");
 
   static DateTime? parse(String dateString) {
     try {

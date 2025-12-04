@@ -32,6 +32,7 @@ class MemoryTile extends StatelessWidget {
       highlightColor: Colors.blue.withOpacity(0.1),
       child: Card(
         color: const Color(0xFF1E1E1E),
+        margin: const EdgeInsets.only(bottom: 16.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -45,7 +46,6 @@ class MemoryTile extends StatelessWidget {
                     children: [
                       const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
                       const SizedBox(width: 8.0),
-                      // USE FORMATTED DATE HERE
                       Text(
                         displayDate, 
                         style: TextStyle(color: Colors.grey[400]),
@@ -72,16 +72,18 @@ class MemoryTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (memory.imagePath != null)
+                  if (memory.imageUrl != null && memory.imageUrl!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
-                        child: Image.asset(
-                          memory.imagePath!,
-                          fit: BoxFit.contain,
+                        child: Image.network(
+                          memory.imageUrl!,
+                          fit: BoxFit.cover,
                           width: double.infinity,
                           height: 200,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(), // Gracefully hide on error
                         ),
                       ),
                     ),
@@ -93,7 +95,9 @@ class MemoryTile extends StatelessWidget {
                   ),
                   if (memory.tags.isNotEmpty) ...[
                     const SizedBox(height: 16.0),
-                    Row(
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 4.0,
                       children: memory.tags.map((label) => _buildTag(label)).toList(),
                     )
                   ]
@@ -108,7 +112,6 @@ class MemoryTile extends StatelessWidget {
 
   Widget _buildTag(String label) {
     return Container(
-      margin: const EdgeInsets.only(right: 8.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
       decoration: BoxDecoration(
         color: Colors.transparent,

@@ -88,7 +88,6 @@ class DefaultFirebaseOptions {
 // lib/main.dart
 
 import 'package:event_diary2/firebase/analytics.dart';
-
 import '/page/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'page/login_page.dart';
@@ -96,21 +95,27 @@ import 'page/signup_page.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'dart:ui';
+import 'package:flutter/foundation.dart'; 
 
+import 'firebase_options.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
-  FlutterError.onError = (FlutterErrorDetails errorDetails) {
-    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
-  };
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+  if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+    FlutterError.onError = (FlutterErrorDetails errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+
+    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
 
   await analytics.setAnalyticsCollectionEnabled(true);
 
@@ -118,9 +123,9 @@ Future<void> main() async {
     name: 'test_event'
   );
 
-
   runApp(const MyApp());
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -165,33 +170,68 @@ class Memory {
 // lib/page/calendar_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import '../bloc/memory/memory_bloc.dart';
+import '../bloc/memory/memory_state.dart';
 import '../models/memory.dart';
+import '../utils/date_helper.dart';
 import '../widgets/tile.dart';
 
-class CalendarPage extends StatelessWidget {
+class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    const sampleMemory = Memory(
-      date: 'October 5, 2025 at 03:00 AM',
-      content: 'Family dinner tonight was wonderful. Mom made her famous lasagna and we spent hours just talking and laughing together. These moments are so precious....',
-      tags: ['family', 'food', 'gratitude'],
-    );
+  State<CalendarPage> createState() => _CalendarPageState();
+}
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 24),
-        _buildCalendarView(),
-        const SizedBox(height: 32),
-        _buildEntriesForDateHeader(),
-        const SizedBox(height: 16),
-        MemoryTile(
-          memory: sampleMemory,
-        ),
-      ],
+class _CalendarPageState extends State<CalendarPage> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime _selectedDay = DateTime.now();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<MemoryBloc, MemoryState>(
+      builder: (context, state) {
+        List<Memory> allMemories = [];
+        if (state is MemoryLoaded) {
+          allMemories = state.memories;
+        }
+
+        // Filter memories for the selected day
+        final selectedDayMemories = allMemories.where((memory) {
+          final date = DateHelper.parse(memory.date);
+          return DateHelper.isSameDay(date, _selectedDay);
+        }).toList();
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildCalendarView(allMemories),
+            const SizedBox(height: 32),
+            _buildEntriesForDateHeader(),
+            const SizedBox(height: 16),
+            if (selectedDayMemories.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "No entries for this day",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+              )
+            else
+              ...selectedDayMemories.map((memory) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: MemoryTile(memory: memory),
+                  )),
+            const SizedBox(height: 80), 
+          ],
+        );
+      },
     );
   }
 
@@ -225,7 +265,7 @@ class CalendarPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCalendarView() {
+  Widget _buildCalendarView(List<Memory> memories) {
     return Card(
       color: const Color(0xFF1E1E1E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -237,7 +277,7 @@ class CalendarPage extends StatelessWidget {
             const SizedBox(height: 24),
             _buildWeekdays(),
             const SizedBox(height: 16),
-            _buildDaysGrid(),
+            _buildDaysGrid(memories),
           ],
         ),
       ),
@@ -250,11 +290,15 @@ class CalendarPage extends StatelessWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left, color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            setState(() {
+              _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+            });
+          },
         ),
-        const Text(
-          'October 2025',
-          style: TextStyle(
+        Text(
+          DateFormat('MMMM yyyy').format(_focusedDay),
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -262,7 +306,11 @@ class CalendarPage extends StatelessWidget {
         ),
         IconButton(
           icon: const Icon(Icons.chevron_right, color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            setState(() {
+              _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+            });
+          },
         ),
       ],
     );
@@ -272,32 +320,63 @@ class CalendarPage extends StatelessWidget {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: days.map((day) => Text(day, style: TextStyle(color: Colors.grey[600]))).toList(),
+      children: days
+          .map((day) =>
+              Text(day, style: TextStyle(color: Colors.grey[600])))
+          .toList(),
     );
   }
 
-  Widget _buildDaysGrid() {
+  Widget _buildDaysGrid(List<Memory> memories) {
+    final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
+    final firstDayOfMonth = DateTime(_focusedDay.year, _focusedDay.month, 1);
+    final startingWeekday = firstDayOfMonth.weekday % 7; 
+
+    final totalSlots = startingWeekday + daysInMonth;
+
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
       ),
-      itemCount: 31, 
+      itemCount: totalSlots,
       itemBuilder: (context, index) {
-        final day = index + 1;
-        if (day == 5) return _buildDayCell(day.toString(), isSelected: true);
-        if (day == 3 || day == 7 || day == 8) return _buildDayCell(day.toString(), hasEntry: true);
-        return _buildDayCell(day.toString());
+        if (index < startingWeekday) {
+          return const SizedBox.shrink();
+        }
+
+        final day = index - startingWeekday + 1;
+        final date = DateTime(_focusedDay.year, _focusedDay.month, day);
+
+        final hasEntry = memories.any((m) {
+          final mDate = DateHelper.parse(m.date);
+          return DateHelper.isSameDay(mDate, date);
+        });
+
+        final isSelected = DateHelper.isSameDay(date, _selectedDay);
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedDay = date;
+            });
+          },
+          child: _buildDayCell(day.toString(),
+              isSelected: isSelected, hasEntry: hasEntry),
+        );
       },
     );
   }
 
-  Widget _buildDayCell(String day, {bool isSelected = false, bool hasEntry = false}) {
+  Widget _buildDayCell(String day,
+      {bool isSelected = false, bool hasEntry = false}) {
     return Container(
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isSelected ? Colors.blue : (hasEntry ? Colors.grey[800] : Colors.transparent),
+        color: isSelected
+            ? Colors.blue
+            : (hasEntry ? Colors.grey[800] : Colors.transparent),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -311,7 +390,7 @@ class CalendarPage extends StatelessWidget {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            if (hasEntry) ...[
+            if (hasEntry && !isSelected) ...[
               const SizedBox(height: 2),
               Container(
                 width: 4,
@@ -329,9 +408,9 @@ class CalendarPage extends StatelessWidget {
   }
 
   Widget _buildEntriesForDateHeader() {
-    return const Text(
-      'Entries for October 5, 2025',
-      style: TextStyle(
+    return Text(
+      'Entries for ${DateFormat('MMMM d, yyyy').format(_selectedDay)}',
+      style: const TextStyle(
         color: Colors.white,
         fontSize: 18,
         fontWeight: FontWeight.bold,
@@ -344,45 +423,66 @@ class CalendarPage extends StatelessWidget {
 // lib/page/home_page.dart
 
 import 'package:flutter/material.dart';
-import '../models/memory.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/memory/memory_bloc.dart';
+import '../bloc/memory/memory_state.dart';
 import '../widgets/tile.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  final List<Memory> memories = const [
-  Memory(
-    date: 'Tuesday, October 8, 2025 at 03:00 AM',
-    content: 'Today was an incredible day! I went hiking...',
-    tags: ['hiking', 'nature', 'adventure'],
-    emoji: '⛰️',
-  ),
-  Memory(
-    date: 'Monday, October 7, 2025 at 03:00 AM',
-    content: 'Started reading a new book today...',
-    imagePath: 'lib/mock/image.png',
-    tags: ['books', 'coffee', 'relaxation'],
-    emoji: '📚',
-  ),
-  Memory(
-    date: 'Sunday, October 6, 2025 at 10:00 PM',
-    content: 'Just a simple note for today.',
-  ),
-];
-
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: memories.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _buildHomeHeader(memories.length);
+    return BlocBuilder<MemoryBloc, MemoryState>(
+      builder: (context, state) {
+        // 1. Loading State
+        if (state is MemoryLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.blue),
+          );
         }
-        final memory = memories[index - 1];
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
-          child: MemoryTile(memory: memory),
-        );
+
+        // 2. Error State
+        if (state is MemoryError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  state.message,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // 3. Loaded State
+        if (state is MemoryLoaded) {
+          final memories = state.memories;
+
+          if (memories.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return ListView.builder(
+            itemCount: memories.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _buildHomeHeader(memories.length);
+              }
+              final memory = memories[index - 1];
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+                child: MemoryTile(memory: memory),
+              );
+            },
+          );
+        }
+
+        return const SizedBox.shrink();
       },
     );
   }
@@ -413,6 +513,24 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildHomeHeader(0), 
+          const SizedBox(height: 40),
+          Icon(Icons.note_alt_outlined, size: 64, color: Colors.grey[700]),
+          const SizedBox(height: 16),
+          Text(
+            'No memories yet',
+            style: TextStyle(color: Colors.grey[500], fontSize: 18),
+          ),
+        ],
       ),
     );
   }
@@ -671,65 +789,12 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 
---- FILE: page/main_screen.dart ---
-// lib/page/main_screen.dart
-
-import 'package:flutter/material.dart';
-import 'home_page.dart';
-import 'calendar_page.dart';
-import 'search_page.dart';
-import 'settings_page.dart';
-import '../widgets/navbar.dart';
-
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-
-  static const List<Widget> _pages = <Widget>[
-    HomePage(),
-    CalendarPage(),
-    SearchPage(),
-    SettingsPage(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: _pages.elementAt(_selectedIndex),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: () {},
-              backgroundColor: Colors.blue,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
-      bottomNavigationBar: NavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
-    );
-  }
-
-}
-
 --- FILE: page/memory_detail_page.dart ---
 // lib/page/memory_detail_page.dart
 
 import 'package:flutter/material.dart';
 import '../models/memory.dart';
+import '../utils/date_helper.dart'; 
 
 class MemoryDetailPage extends StatelessWidget {
   final Memory memory;
@@ -738,6 +803,8 @@ class MemoryDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayDate = DateHelper.formatDisplayDate(memory.date);
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -761,11 +828,11 @@ class MemoryDetailPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-            onPressed: () { /* TODO: Implement edit functionality */ },
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () { /* TODO: Implement delete functionality */ },
+            onPressed: () {},
           ),
         ],
       ),
@@ -778,19 +845,31 @@ class MemoryDetailPage extends StatelessWidget {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min, // Make card wrap content
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
                     const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
                     const SizedBox(width: 8.0),
                     Text(
-                      memory.date, // Use data from the memory object
+                      displayDate, 
                       style: TextStyle(color: Colors.grey[400]),
                     ),
+                    
+                    const Spacer(),
+                    
+                    if (memory.emoji != null && memory.emoji!.isNotEmpty)
+                      Text(
+                        memory.emoji!,
+                        style: const TextStyle(
+                          fontSize: 24.0, 
+                          fontFamily: 'NotoColorEmoji',
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 16.0),
+                
                 if (memory.imagePath != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
@@ -841,11 +920,16 @@ class MemoryDetailPage extends StatelessWidget {
   }
 }
 
-
 --- FILE: page/search_page.dart ---
 // lib/page/search_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import '../bloc/memory/memory_bloc.dart';
+import '../bloc/memory/memory_event.dart';
+import '../bloc/memory/memory_state.dart';
 import '../models/memory.dart';
 import '../widgets/tile.dart';
 
@@ -857,7 +941,140 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  bool _showFilters = true;
+  bool _showFilters = false;
+  
+  // Controllers
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _tagController = TextEditingController();
+  final TextEditingController _emojiController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  late MemoryBloc _memoryBloc;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _memoryBloc = context.read<MemoryBloc>();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _tagController.dispose();
+    _emojiController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
+
+    _memoryBloc.add(LoadMemories());
+    
+    super.dispose();
+  }
+
+  void _applyFilters() {
+    final query = _searchController.text.trim();
+    final tags = _tagController.text.isNotEmpty
+        ? _tagController.text.split(',').map((e) => e.trim()).toList()
+        : null;
+    final emoji = _emojiController.text.trim();
+
+    context.read<MemoryBloc>().add(FilterMemories(
+      searchQuery: query,
+      tags: tags,
+      emoji: emoji.isNotEmpty ? emoji : null,
+      startDate: _startDate,
+      endDate: _endDate,
+    ));
+  }
+
+  void _showEmojiPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E1E),
+      builder: (context) {
+        return EmojiPicker(
+          onEmojiSelected: (category, emoji) {
+            setState(() {
+              _emojiController.text = emoji.emoji;
+            });
+            _applyFilters();
+            Navigator.pop(context);
+          },
+          config: const Config(
+            height: 300,
+            checkPlatformCompatibility: true,
+            emojiViewConfig: EmojiViewConfig(
+              backgroundColor: Color(0xFF1E1E1E),
+              columns: 7,
+              emojiSizeMax: 28,
+              verticalSpacing: 0,
+              horizontalSpacing: 0,
+              gridPadding: EdgeInsets.zero,
+              recentsLimit: 28,
+              replaceEmojiOnLimitExceed: false,
+              noRecents: Text('No Recents', style: TextStyle(fontSize: 20, color: Colors.white), textAlign: TextAlign.center),
+            ),
+            categoryViewConfig: CategoryViewConfig(
+              backgroundColor: Color(0xFF1E1E1E),
+              indicatorColor: Colors.blue,
+              iconColorSelected: Colors.blue,
+              iconColor: Colors.grey,
+              tabIndicatorAnimDuration: kTabScrollDuration,
+              dividerColor: Colors.transparent,
+            ),
+            bottomActionBarConfig: BottomActionBarConfig(enabled: false),
+            searchViewConfig: SearchViewConfig(
+               backgroundColor: Color(0xFF1E1E1E),
+               buttonIconColor: Colors.grey, 
+            )
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
+    final initialDate = isStart 
+        ? (_startDate ?? DateTime.now()) 
+        : (_endDate ?? DateTime.now());
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              surface: Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF1E1E1E),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+          _startDateController.text = DateFormat('MM/dd/yyyy').format(picked);
+        } else {
+          _endDate = picked;
+          _endDateController.text = DateFormat('MM/dd/yyyy').format(picked);
+        }
+      });
+      _applyFilters();
+    }
+  }
 
   void _toggleFilters() {
     setState(() {
@@ -865,27 +1082,58 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  void _clearFilters() {
+    _searchController.clear();
+    _tagController.clear();
+    _emojiController.clear();
+    _startDateController.clear();
+    _endDateController.clear();
+    
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+
+    context.read<MemoryBloc>().add(LoadMemories());
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Updated sample data to include an emoji
-    const sampleResult = Memory(
-      date: 'October 7, 2025 at 03:00 AM',
-      content: 'Started reading a new book today called "The Midnight Library". Already 100 pages in and I can\'t put it down. The concept of parallel lives is fascina...',
-      tags: ['books', 'coffee', 'relaxation'],
-      emoji: '📚', // Added emoji for the result tile
-    );
+    return BlocBuilder<MemoryBloc, MemoryState>(
+      builder: (context, state) {
+        List<Memory> results = [];
+        if (state is MemoryLoaded) {
+          results = state.memories;
+        }
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 24),
-        _buildSearchCard(),
-        const SizedBox(height: 32),
-        _buildResultsHeader(),
-        const SizedBox(height: 16),
-        MemoryTile(memory: sampleResult),
-      ],
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildSearchCard(),
+            const SizedBox(height: 32),
+            _buildResultsHeader(results.length),
+            const SizedBox(height: 16),
+            if (results.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(
+                  child: Text(
+                    "No results found", 
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+              )
+            else
+              ...results.map((memory) => Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: MemoryTile(memory: memory),
+              )),
+            const SizedBox(height: 80),
+          ],
+        );
+      },
     );
   }
 
@@ -946,8 +1194,10 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildSearchTextField() {
     return TextField(
+      controller: _searchController,
       style: const TextStyle(color: Colors.white),
       decoration: _inputDecoration('Search by text...', prefixIcon: Icons.search),
+      onChanged: (_) => _applyFilters(),
     );
   }
 
@@ -961,13 +1211,15 @@ class _SearchPageState extends State<SearchPage> {
       ),
       style: TextButton.styleFrom(
         minimumSize: const Size(double.infinity, 48),
-        backgroundColor: Colors.grey.withValues(alpha: 0.1),
+        backgroundColor: Colors.grey.withOpacity(0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
       ),
     );
   }
 
   Widget _buildFilterSection() {
+    final hasEmoji = _emojiController.text.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -975,18 +1227,43 @@ class _SearchPageState extends State<SearchPage> {
         Text('Filter by Tags', style: TextStyle(color: Colors.grey[400])),
         const SizedBox(height: 8),
         TextField(
+          controller: _tagController,
           style: const TextStyle(color: Colors.white),
-          decoration: _inputDecoration('Enter tags separated by commas...'),
+          decoration: _inputDecoration('Enter tags (comma separated)...'),
+          onChanged: (_) => _applyFilters(),
         ),
         
         const SizedBox(height: 16),
         Text('Filter by Emoji', style: TextStyle(color: Colors.grey[400])),
         const SizedBox(height: 8),
-        TextField(
-          style: const TextStyle(color: Colors.white),
-          decoration: _inputDecoration('Enter an emoji...', prefixIcon: Icons.emoji_emotions_outlined),
-        ),
         
+        TextField(
+          controller: _emojiController,
+          readOnly: true,
+          onTap: _showEmojiPicker,
+          style: TextStyle(
+            color: Colors.white, 
+            fontFamily: hasEmoji ? 'NotoColorEmoji' : null, 
+            fontSize: hasEmoji ? 24 : 16, 
+          ),
+          decoration: _inputDecoration(
+            'Select an emoji...', 
+            prefixIcon: Icons.emoji_emotions_outlined,
+            suffixIcon: hasEmoji ? Icons.close : null,
+          ).copyWith(
+            suffixIcon: hasEmoji 
+              ? IconButton(
+                  icon: Icon(Icons.close, color: Colors.grey[400], size: 20),
+                  onPressed: () {
+                    setState(() {
+                      _emojiController.clear();
+                    });
+                    _applyFilters();
+                  },
+                )
+              : null,
+          ),
+        ),
 
         const SizedBox(height: 16),
         Row(
@@ -998,10 +1275,11 @@ class _SearchPageState extends State<SearchPage> {
                   Text('Start Date', style: TextStyle(color: Colors.grey[400])),
                   const SizedBox(height: 8),
                   TextField(
+                    controller: _startDateController,
                     readOnly: true,
                     style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('10.09.2025', suffixIcon: Icons.calendar_today_outlined),
-                    onTap: () { /* TODO: Show date picker */ },
+                    decoration: _inputDecoration('mm/dd/yyyy', suffixIcon: Icons.calendar_today_outlined),
+                    onTap: () => _selectDate(context, true),
                   ),
                 ],
               ),
@@ -1014,22 +1292,24 @@ class _SearchPageState extends State<SearchPage> {
                   Text('End Date', style: TextStyle(color: Colors.grey[400])),
                   const SizedBox(height: 8),
                   TextField(
+                    controller: _endDateController,
                     readOnly: true,
                     style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('10.12.2025', suffixIcon: Icons.calendar_today_outlined),
-                    onTap: () { /* TODO: Show date picker */ },
+                    decoration: _inputDecoration('mm/dd/yyyy', suffixIcon: Icons.calendar_today_outlined),
+                    onTap: () => _selectDate(context, false),
                   ),
                 ],
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 24),
         TextButton(
-          onPressed: () {},
+          onPressed: _clearFilters,
           style: TextButton.styleFrom(
             minimumSize: const Size(double.infinity, 48),
-            side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+            side: BorderSide(color: Colors.grey.withOpacity(0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
           ),
           child: Text('Clear All Filters', style: TextStyle(color: Colors.grey[400])),
@@ -1038,10 +1318,10 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildResultsHeader() {
-    return const Text(
-      '1 result',
-      style: TextStyle(
+  Widget _buildResultsHeader(int count) {
+    return Text(
+      '$count result${count != 1 ? 's' : ''}',
+      style: const TextStyle(
         color: Colors.white,
         fontSize: 18,
         fontWeight: FontWeight.bold,
@@ -1054,7 +1334,7 @@ class _SearchPageState extends State<SearchPage> {
       hintText: hintText,
       hintStyle: TextStyle(color: Colors.grey[600]),
       filled: true,
-      fillColor: Colors.grey.withValues(alpha: 0.1),
+      fillColor: Colors.grey.withOpacity(0.1),
       prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: Colors.grey[400], size: 20) : null,
       suffixIcon: suffixIcon != null ? Icon(suffixIcon, color: Colors.grey[400], size: 20) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1100,7 +1380,6 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 16),
         _buildAccountCard(),
         const SizedBox(height: 16),
-        // --- ADDED THIS NEW DANGER ZONE CARD ---
         _buildDangerZoneCard(),
         const SizedBox(height: 24),
       ],
@@ -1611,6 +1890,67 @@ class _SignUpPageState extends State<SignUpPage> {
 }
 
 
+--- FILE: page/main_screen.dart ---
+// lib/page/main_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; 
+import '../data/memory_repository.dart'; 
+import '../bloc/memory/memory_bloc.dart'; 
+import '../bloc/memory/memory_event.dart'; 
+import 'home_page.dart';
+import 'calendar_page.dart';
+import 'search_page.dart';
+import 'settings_page.dart';
+import '../widgets/navbar.dart';
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _pages = <Widget>[
+    HomePage(),
+    CalendarPage(),
+    SearchPage(),
+    SettingsPage(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => MemoryBloc(MemoryRepository())..add(LoadMemories()),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF121212),
+        body: _pages.elementAt(_selectedIndex),
+        floatingActionButton: _selectedIndex == 0
+            ? FloatingActionButton(
+                onPressed: () {
+                },
+                backgroundColor: Colors.blue,
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+            : null,
+        bottomNavigationBar: NavBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+        ),
+      ),
+    );
+  }
+}
+
 --- FILE: widgets/navbar.dart ---
 import 'package:flutter/material.dart';
 
@@ -1662,6 +2002,7 @@ import 'package:flutter/material.dart';
 import '../models/memory.dart';
 import '../page/memory_detail_page.dart';
 import '../firebase/analytics.dart';
+import '../utils/date_helper.dart';
 
 class MemoryTile extends StatelessWidget {
   final Memory memory;
@@ -1673,6 +2014,8 @@ class MemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayDate = DateHelper.formatDisplayDate(memory.date);
+
     return InkWell(
       onTap: () {
         analytics.logEvent(name: 'memory_tile_tapped');
@@ -1683,8 +2026,8 @@ class MemoryTile extends StatelessWidget {
           ),
         );
       },
-      splashColor: Colors.blue.withValues(alpha: 0.2),
-      highlightColor: Colors.blue.withValues(alpha: 0.1),
+      splashColor: Colors.blue.withOpacity(0.2),
+      highlightColor: Colors.blue.withOpacity(0.1),
       child: Card(
         color: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -1700,8 +2043,9 @@ class MemoryTile extends StatelessWidget {
                     children: [
                       const Icon(Icons.calendar_today, color: Colors.blue, size: 16.0),
                       const SizedBox(width: 8.0),
+                      // USE FORMATTED DATE HERE
                       Text(
-                        memory.date,
+                        displayDate, 
                         style: TextStyle(color: Colors.grey[400]),
                       ),
                     ],
@@ -1712,7 +2056,10 @@ class MemoryTile extends StatelessWidget {
                   if (memory.emoji != null && memory.emoji!.isNotEmpty)
                     Text(
                       memory.emoji!,
-                      style: const TextStyle(fontSize: 22.0, fontFamily: 'Noto Emoji'),
+                      style: const TextStyle(
+                        fontSize: 22.0,
+                        fontFamily: 'NotoColorEmoji',
+                      ),
                     ),
                 ],
               ),
@@ -1824,4 +2171,204 @@ class AuthService {
 
 --- FILE: combined_content.txt ---
 
+
+--- FILE: bloc/memory/memory_bloc.dart ---
+import 'dart:async';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../models/memory.dart';
+import '../../data/memory_repository.dart';
+import 'memory_event.dart';
+import 'memory_state.dart';
+
+class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
+  final MemoryRepository _repository;
+  List<Memory> _allMemories = [];
+
+  MemoryBloc(this._repository) : super(MemoryLoading()) {
+    on<LoadMemories>(_onLoadMemories);
+    on<FilterMemories>(_onFilterMemories);
+  }
+
+  Future<void> _onLoadMemories(
+    LoadMemories event,
+    Emitter<MemoryState> emit,
+  ) async {
+    emit(MemoryLoading());
+    try {
+      _allMemories = await _repository.getMemories();
+      emit(MemoryLoaded(_allMemories));
+    } catch (e) {
+      emit(MemoryError("Failed to load memories"));
+    }
+  }
+
+  void _onFilterMemories(
+    FilterMemories event,
+    Emitter<MemoryState> emit,
+  ) {
+    List<Memory> filtered = _allMemories.where((memory) {
+      // 1. Filter by Text Content
+      if (event.searchQuery != null && event.searchQuery!.isNotEmpty) {
+        if (!memory.content.toLowerCase().contains(event.searchQuery!.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 2. Filter by Emoji
+      if (event.emoji != null && event.emoji!.isNotEmpty) {
+        if (memory.emoji != event.emoji) {
+          return false;
+        }
+      }
+
+      // 3. Filter by Tags
+      if (event.tags != null && event.tags!.isNotEmpty) {
+        bool hasMatchingTag = false;
+        for (var tag in event.tags!) {
+          if (memory.tags.contains(tag)) {
+            hasMatchingTag = true;
+            break;
+          }
+        }
+        if (!hasMatchingTag) return false;
+      }
+
+      // 4. Filter by Date Range
+      if (event.startDate != null || event.endDate != null) {
+        final DateTime? memDate = _repository.parseDate(memory.date);
+        
+        if (memDate != null) {
+          if (event.startDate != null) {
+            final start = DateTime(event.startDate!.year, event.startDate!.month, event.startDate!.day);
+            if (memDate.isBefore(start)) {
+              return false;
+            }
+          }
+
+          if (event.endDate != null) {
+            final end = DateTime(event.endDate!.year, event.endDate!.month, event.endDate!.day, 23, 59, 59);
+            if (memDate.isAfter(end)) {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }).toList();
+
+    emit(MemoryLoaded(filtered));
+  }
+}
+
+--- FILE: bloc/memory/memory_event.dart ---
+abstract class MemoryEvent {}
+
+class LoadMemories extends MemoryEvent {}
+
+class FilterMemories extends MemoryEvent {
+  final String? searchQuery;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final List<String>? tags;
+  final String? emoji;
+
+  FilterMemories({
+    this.searchQuery,
+    this.startDate,
+    this.endDate,
+    this.tags,
+    this.emoji,
+  });
+}
+
+--- FILE: bloc/memory/memory_state.dart ---
+import '../../models/memory.dart';
+
+abstract class MemoryState {}
+
+class MemoryLoading extends MemoryState {}
+
+class MemoryLoaded extends MemoryState {
+  final List<Memory> memories;
+
+  MemoryLoaded(this.memories);
+}
+
+class MemoryError extends MemoryState {
+  final String message;
+
+  MemoryError(this.message);
+}
+
+--- FILE: utils/date_helper.dart ---
+// lib/utils/date_helper.dart
+
+import 'package:intl/intl.dart';
+
+class DateHelper {
+  static final DateFormat _displayFormatter = DateFormat("EEEE, MMMM d, yyyy 'at' hh:mm a");
+
+  static DateTime? parse(String dateString) {
+    try {
+      return DateTime.parse(dateString);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String formatDisplayDate(String isoDateString) {
+    final date = parse(isoDateString);
+    if (date == null) return isoDateString;
+    return _displayFormatter.format(date);
+  }
+
+  static bool isSameDay(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+--- FILE: data/memory_repository.dart ---
+// lib/data/memory_repository.dart
+
+import '../models/memory.dart';
+import '../utils/date_helper.dart';
+
+class MemoryRepository {
+  final List<Memory> _mockMemories = const [
+    Memory(
+      date: '2025-10-08T03:00:00',
+      content: 'Today was an incredible day! I went hiking up the mountain...',
+      tags: ['hiking', 'nature', 'adventure'],
+      emoji: '⛰️',
+    ),
+    Memory(
+      date: '2025-10-07T03:00:00',
+      content: 'Started reading a new book today called "The Midnight Library". Already 100 pages in...',
+      imagePath: 'lib/mock/image.png',
+      tags: ['books', 'coffee', 'relaxation'],
+      emoji: '📚',
+    ),
+    Memory(
+      date: '2025-10-06T22:00:00',
+      content: 'Just a simple note for today. Feeling grateful.',
+      tags: ['gratitude'],
+    ),
+    Memory(
+      date: '2025-10-05T03:00:00', 
+      content: 'Family dinner tonight was wonderful. Mom made her famous lasagna.',
+      tags: ['family', 'food', 'gratitude'],
+    ),
+  ];
+
+  Future<List<Memory>> getMemories() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return _mockMemories;
+  }
+
+  DateTime? parseDate(String dateString) {
+    return DateHelper.parse(dateString);
+  }
+}
 
