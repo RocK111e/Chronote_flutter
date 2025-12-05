@@ -47,7 +47,6 @@ class _EditMemoryPageState extends State<EditMemoryPage> {
   }
 
   void _updateDateText() {
-    // UPDATED: Matches the requested format (Mon, Oct 25, 2025 14:30)
     _dateController.text = DateFormat('EEE, MMM d, yyyy HH:mm').format(_selectedDate);
   }
 
