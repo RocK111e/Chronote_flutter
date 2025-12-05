@@ -63,13 +63,10 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
     }
   }
 
-  // UPDATED: Handles deleting image + doc
   Future<void> _onDeleteMemory(DeleteMemory event, Emitter<MemoryState> emit) async {
     try {
-      // Pass the whole memory object to repo
       await _repository.deleteMemory(event.memory);
       
-      // Optimistic update
       _allMemories.removeWhere((m) => m.id == event.memory.id);
       emit(MemoryLoaded(List.from(_allMemories)));
       

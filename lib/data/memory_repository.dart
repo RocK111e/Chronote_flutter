@@ -55,23 +55,18 @@ class MemoryRepository {
         .update(memory.toFirestore());
   }
 
-  // UPDATED: Now takes the full Memory object to access the imageUrl
   Future<void> deleteMemory(Memory memory) async {
     if (memory.id == null) return;
 
-    // 1. Try to delete the image from Storage if it exists
     if (memory.imageUrl != null && memory.imageUrl!.isNotEmpty) {
       try {
-        // refFromURL creates a reference directly from the download link
         await _storage.refFromURL(memory.imageUrl!).delete();
       } catch (e) {
-        // We log it but don't stop the process. 
-        // Even if image delete fails (e.g. file already gone), we still want to delete the note.
-        print("⚠️ Warning: Could not delete image file: $e");
+        // Log the error but continue with deletion
+        print('Error deleting image from storage: $e');
       }
     }
 
-    // 2. Delete the document from Firestore
     await _firestore.collection('memories').doc(memory.id).delete();
   }
 
