@@ -66,10 +66,8 @@ class MemoryBloc extends Bloc<MemoryEvent, MemoryState> {
   Future<void> _onDeleteMemory(DeleteMemory event, Emitter<MemoryState> emit) async {
     try {
       await _repository.deleteMemory(event.memory);
-      
       _allMemories.removeWhere((m) => m.id == event.memory.id);
       emit(MemoryLoaded(List.from(_allMemories)));
-      
       add(LoadMemories());
     } catch (e) {
       emit(MemoryError("Failed to delete memory"));

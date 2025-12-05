@@ -1,7 +1,9 @@
+// lib/page/settings_page.dart
+
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import '../firebase/auth.dart'; 
-
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,7 +14,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _remindersEnabled = true;
-  String _selectedFrequency = 'Daily';
   String _selectedLanguage = 'English';
   final AuthService _authService = AuthService();
 
@@ -23,8 +24,6 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         _buildHeader(),
         const SizedBox(height: 24),
-        _buildProfileCard(),
-        const SizedBox(height: 16),
         _buildLanguageCard(),
         const SizedBox(height: 16),
         _buildRemindersCard(),
@@ -38,6 +37,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildHeader() {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email ?? 'Guest';
+
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -55,35 +57,14 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 8.0),
             Text(
-              'Manage your account and preferences',
+              email,
               style: TextStyle(
                 color: Colors.grey[400],
-                fontSize: 16.0,
+                fontSize: 18.0, 
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildProfileCard() {
-    return _buildCard(
-      icon: Icons.person_outline,
-      title: 'Profile',
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const CircleAvatar(
-          radius: 24,
-          backgroundColor: Colors.blue,
-          child: Text('JD',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        ),
-        title: const Text('John Doe',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        subtitle: Text('john.doe@example.com',
-            style: TextStyle(color: Colors.grey[400])),
       ),
     );
   }
@@ -95,11 +76,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: _buildDropdown(
         value: _selectedLanguage,
         items: ['English', 'Ukrainian', 'Spanish'],
-        onChanged: (value) {
-          setState(() {
-            _selectedLanguage = value!;
-          });
-        },
+        onChanged: (value) => setState(() => _selectedLanguage = value!),
       ),
     );
   }
@@ -109,46 +86,14 @@ class _SettingsPageState extends State<SettingsPage> {
       icon: Icons.notifications_none,
       title: 'Reminders',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SwitchListTile(
-            title: const Text('Enable notifications',
-                style: TextStyle(color: Colors.white)),
-            subtitle: Text('Get reminded to write your daily entries',
-                style: TextStyle(color: Colors.grey[400])),
+            title: const Text('Enable notifications', style: TextStyle(color: Colors.white)),
+            subtitle: Text('Get reminded daily', style: TextStyle(color: Colors.grey[400])),
             value: _remindersEnabled,
-            onChanged: (value) {
-              setState(() {
-                _remindersEnabled = value;
-              });
-            },
-            contentPadding: EdgeInsets.zero,
-            activeTrackColor: Colors.blue.withOpacity(0.5),
+            onChanged: (val) => setState(() => _remindersEnabled = val),
             activeColor: Colors.blue,
-          ),
-          const SizedBox(height: 16),
-          Text('Frequency', style: TextStyle(color: Colors.grey[400])),
-          const SizedBox(height: 8),
-          _buildDropdown(
-            value: _selectedFrequency,
-            items: ['Daily', 'Weekly', 'Monthly'],
-            onChanged: (value) {
-              setState(() {
-                _selectedFrequency = value!;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          Text('Time', style: TextStyle(color: Colors.grey[400])),
-          const SizedBox(height: 8),
-          TextField(
-            readOnly: true,
-            controller: TextEditingController(text: '08:00 PM'),
-            style: const TextStyle(color: Colors.white),
-            decoration: _inputDecoration(suffixIcon: Icons.access_time),
-            onTap: () {
-              /* TODO: Show time picker */
-            },
+            contentPadding: EdgeInsets.zero,
           ),
         ],
       ),
@@ -167,10 +112,9 @@ class _SettingsPageState extends State<SettingsPage> {
           Navigator.of(context).pushReplacementNamed('/');
         },
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14), 
           side: const BorderSide(color: Colors.red),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         ),
       ),
     );
@@ -179,43 +123,34 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildDangerZoneCard() {
     return _buildCard(
       icon: Icons.warning_amber_rounded,
-      title: '',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 16),
-          TextButton.icon(
-            label: const Text('Force Crash', style: TextStyle(color: Colors.red)),
-            onPressed: () => FirebaseCrashlytics.instance.crash(),
-            style: TextButton.styleFrom(
-              side: BorderSide(color: Colors.red.withOpacity(0.5)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          const SizedBox(height: 12),
-        ],
+      title: 'Danger Zone',
+      child: TextButton(
+        onPressed: () => FirebaseCrashlytics.instance.crash(),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14), 
+          side: BorderSide(color: Colors.red.withOpacity(0.5)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        ),
+        child: const Text('Force Crash', style: TextStyle(color: Colors.red)),
       ),
     );
   }
 
-  Widget _buildCard(
-      {required IconData icon, required String title, required Widget child}) {
+  Widget _buildCard({required IconData icon, required String title, required Widget child}) {
     return Card(
       color: const Color(0xFF1E1E1E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.stretch, 
           children: [
             Row(
               children: [
-                Icon(icon, color: Colors.grey[400]),
-                const SizedBox(width: 12),
-                Text(title,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 16)),
-              ],
+                Icon(icon, color: Colors.grey[400]), 
+                const SizedBox(width: 12), 
+                Text(title, style: TextStyle(color: Colors.grey[400], fontSize: 16))
+              ]
             ),
             const Divider(height: 32),
             child,
@@ -225,36 +160,18 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildDropdown(
-      {required String value,
-      required List<String> items,
-      required ValueChanged<String?> onChanged}) {
+  Widget _buildDropdown({required String value, required List<String> items, required ValueChanged<String?> onChanged}) {
     return DropdownButtonFormField<String>(
       value: value,
-      items: items.map((String itemValue) {
-        return DropdownMenuItem<String>(
-          value: itemValue,
-          child: Text(itemValue),
-        );
-      }).toList(),
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
       onChanged: onChanged,
-      style: const TextStyle(color: Colors.white),
-      decoration: _inputDecoration(),
       dropdownColor: const Color(0xFF2C2C2E),
-    );
-  }
-
-  InputDecoration _inputDecoration({IconData? suffixIcon}) {
-    return InputDecoration(
-      filled: true,
-      fillColor: Colors.grey.withOpacity(0.1),
-      suffixIcon: suffixIcon != null
-          ? Icon(suffixIcon, color: Colors.grey[400], size: 20)
-          : null,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide.none,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.grey.withOpacity(0.1),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
     );
   }

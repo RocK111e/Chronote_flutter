@@ -1,7 +1,9 @@
 // lib/page/main_screen.dart
 
 import 'package:flutter/material.dart';
-// BlocProvider is removed from here as it is now in main.dart
+import 'package:flutter_bloc/flutter_bloc.dart'; 
+import '../bloc/memory/memory_bloc.dart'; 
+import '../bloc/memory/memory_event.dart'; 
 import 'home_page.dart';
 import 'calendar_page.dart';
 import 'search_page.dart';
@@ -26,6 +28,12 @@ class _MainScreenState extends State<MainScreen> {
     SettingsPage(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    context.read<MemoryBloc>().add(LoadMemories());
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -34,8 +42,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // UPDATED: Removed BlocProvider wrapper. 
-    // It now uses the one provided by main.dart
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: _pages.elementAt(_selectedIndex),
