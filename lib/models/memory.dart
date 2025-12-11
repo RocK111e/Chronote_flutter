@@ -22,7 +22,7 @@ class Memory {
   });
 
   factory Memory.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?
+    final data = doc.data() as Map<String, dynamic>?;
 
     if (data == null) {
       return Memory(
