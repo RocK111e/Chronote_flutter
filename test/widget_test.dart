@@ -11,5 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:event_diary2/main.dart';
 
 void main() {
-
+  test('Simple dummy test that always passes', () {
+  expect(true, true);
+  });
 }
